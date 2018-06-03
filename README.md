@@ -12,7 +12,7 @@ Above is the schematic of how we constructed our circuit. Here, **BT134-600E** i
 ![quadrant definition](https://user-images.githubusercontent.com/26379432/40282026-3e706e06-5c9b-11e8-8196-f220596540b5.png)<br />
 TRIAC has four different modes which can refer from above, to get one of the mode to operate, the direction of the current flow into the gate and MT2 of the TRIAC must be matched. <br /><br />
 
- 
+
 
 Each mode has different output result: Quadrant 1, Quadrant 2, Quadrant 3 and Quadrant 4. The main objective of the experiment here is to check whether the TRIAC is activated when sufficient V<sub>GT</sub> is applied. By looking at the V<sub>T</sub>,  it can be tell whether the TRIAC is being activated. So the main focus here is V<sub>T</sub> and V<sub>GT</sub>, if V<sub>GT</sub> ramped up to sufficient value, V<sub>T</sub> should drop as the current, I<sub>T</sub> is conducting through the TRIAC. <br /><br />
 
@@ -42,7 +42,34 @@ The V<sub>T</sub> drop from -9V to -1.7V when V<sub>GT</sub> ramped up to 0.8V. 
 # 1.3 Problem Faced
 As noticed from the waveform above, a distortion occurs after the TRIAC is activated. This is due to the function generator is not able to sink that much of current in that much of period of time. <br /><br /><br />
 ![distortion](https://user-images.githubusercontent.com/26379432/40885451-cf93bd8a-6758-11e8-91bc-de8173a4ce54.png)
-A voltage power follower can be created to solve this problem.
+The problem is not a big deal as the values are captured before the distortions happen. However, a voltage power follower can be created to solve this problem.
 
-# 1.4 Reference
-1. https://www.edaboard.com/showthread.php?86588-What-kind-of-triac-should-I-use-with-this-light-dimmer-circuit
+# 1.4 References
+1. https://www.edaboard.com/showthread.php?86588-What-kind-of-triac-should-I-use-with-this-light-dimmer-circuit<br />
+2. http://www.ween-semi.com/documents/BT134-600E.pdf (Datasheet of BT134-600E)
+
+
+
+# 2. Zero-Crossing circuit
+Zero-cross circuit is used to detect when the voltage is crossing zero on AC signal. This is very useful to control when to activate the TRIAC depending on the purpose.
+## 2.1 Opto-coupler
+Opto-coupler or opto-isolator is used to isolate the high voltage and low voltage. Opto-coupler consist of a LED that emits infra-red light and a photo-sensitive semiconductor device to receive the signal. There are many cases where in a same circuit, may consist high voltage area and low voltage area to drive the respective components.  In order to protect the components (if something went wrong) from the circuit that used low voltage, an opto-coupler is used.
+## 2.2 Schematic
+![schematic-zerocrossing custom](https://user-images.githubusercontent.com/26379432/40888098-d577d142-6784-11e8-8257-8b30b06fb9f7.png)
+<br /><br />
+The schematic above shows how the circuit is constructed. V<sub>cc</sub> is connected to a step-down transformer to step down 240V<sub>AC</sub> to a safer voltage 12V<sub>RMS</sub>. The opto-coupler used here is **4N25** to isolate the high voltage from directly input into the MCU(MCU can only receives 3.3V signals) . The left side of the opto-coupler is high voltage and the right side of it is driving low voltage which is needed to connect to the MCU. The R<sub>c</sub> is the pull-up resistor that when BJT inside the optocoupler is not saturated, micocontroller will receive a HIGH and when the BJT is saturated, microcontroller will receive a LOW. The circuit on the left is constructed such a way that to suit the requirement of the optocoupler. In order to ease the calculation of the value of resistors R<sub>A</sub>, R<sub>B</sub>, and R<sub>D</sub>, two equivalent circuits is made: forward and reverse bias (because it is AC signals).<br /><br /><br />
+## 2.3 Equations
+First, take a look on the reverse bias as it is simpler.<br /><br /><br />
+![zerocrossingequivalentcircuit reverse](https://user-images.githubusercontent.com/26379432/40889363-efe55b5e-6797-11e8-8f3c-fa3fbb27192d.png)<br /><br />
+The above shows the equivalent circuit. There is no need to consider R<sub>D</sub> as no current will flow in to the LED of the optocoupler. Take notice that V<sub>x</sub> - V<sub>y</sub> must be less than the maximum rating of the reverse voltage of 4N25 optocoupler which is 5V. <br /><br />
+![capture1](https://user-images.githubusercontent.com/26379432/40889325-55fc2446-6797-11e8-8f4d-281a196e7cd4.PNG)<br /><br /><br />
+
+Next, let's go on to the forward bias circuit.<br /><br /><br />
+![zerocrossingequivalentcircuit forward](https://user-images.githubusercontent.com/26379432/40889360-ec7ef1aa-6797-11e8-869b-7585faca4acc.png)<br /><br />
+Here, the optocoupler is replaced by an power supply as assumption is made that the LED consumes 1.2V. Also, 50mA of current is needed to flow into R<sub>D</sub> to drive the LED (differs when using different optocoupler).  Assume the V<sub>y</sub>-V<sub>x</sub> is 2V (assumption must be logical).  R<sub>D</sub>=2-1.2<br /><br />
+![capture2](https://user-images.githubusercontent.com/26379432/40889617-82b4bcf0-679c-11e8-8f5f-712bc43c66f8.PNG)
+![capture4](https://user-images.githubusercontent.com/26379432/40889674-97ae8df6-679d-11e8-9f56-61b3024a2038.PNG)<br /><br />
+By having the value of R<sub>A</sub>, R<sub>B</sub> can be calculated by substituting R<sub>A</sub> into Equation (12). Also, R<sub>D</sub> can be calculated easily by using the equation below.![capture5](https://user-images.githubusercontent.com/26379432/40889801-4dfa91d0-679f-11e8-8131-21776ad7a65b.PNG)<br />
+The values of R<sub>A</sub> and R<sub>B</sub> may not be a valid resistance value available. Therefore, a smaller value nearest to the calculated of R<sub>A</sub> and a bigger value nearest to the calculated of R<sub>B</sub> can be applied.
+# 2.4 References
+1. https://www.vishay.com/docs/83725/4n25.pdf (Datasheet of 4N25)
