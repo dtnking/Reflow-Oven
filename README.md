@@ -1,5 +1,10 @@
 # Reflow-Oven
 
+Here is the internal circuit of the original baker oven that is not yet being customized to reflow oven.
+![as](https://user-images.githubusercontent.com/26379432/41048845-3dfba28e-69e2-11e8-8aed-c9735438e152.png)
+
+
+
 # 1. TRIAC
 TRIAC is an three-terminal semiconductor device to control current flow. When triggered, it allows current to conduct through it in either direction. The objective of this experiment is to study the property of TRIAC and understand how it works pratically.<br />
 
