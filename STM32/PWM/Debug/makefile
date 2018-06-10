@@ -45,8 +45,8 @@ clean:
 	-@echo ' '
 
 post-build:
-	-@echo 'Generating binary and Printing size information:'
-	arm-none-eabi-objcopy -O binary "PWM.elf" "PWM.bin"
+	-@echo 'Generating hex and Printing size information:'
+	arm-none-eabi-objcopy -O ihex "PWM.elf" "PWM.hex"
 	arm-none-eabi-size "PWM.elf"
 	-@echo ' '
 
