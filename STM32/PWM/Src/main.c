@@ -45,16 +45,14 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
-#define TIM4_DMAR_ADDRS   ((uint32_t)0x4000084C)
-
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-DMA_HandleTypeDef hdma_tim4_ch1;
-
-uint16_t aSRC_Buffer[6] = {100, 0, 90, 100,0,50};
+DMA_HandleTypeDef hdma_tim4_up;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define TIM4_DMAR_ADDRS ((uint32_t)0x4000084C)
+uint16_t aSRC_Buffer[6] = {0x100, 0x00,0x90,0x100,0x00, 0x50};
 
 /* USER CODE END PV */
 
@@ -63,15 +61,14 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);
-static void dmaSetAddressAndSize(void);
+static void MX_TIM4_Init(void);                                    
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
                                 
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+static void dmaSetAddressAndSize(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -110,11 +107,10 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
-  dmaSetAddressAndSize();
   /* USER CODE BEGIN 2 */
+  dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
-
 
   /* USER CODE END 2 */
 
@@ -240,9 +236,9 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 49;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-
+  htim4.Init.Period = 1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -259,7 +255,7 @@ static void MX_TIM4_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
   {
@@ -288,29 +284,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
-}
-
-static void dmaSetAddressAndSize(void)
-{
-
-	hdma_tim4_ch1.Instance->CPAR = (uint32_t)TIM4_DMAR_ADDRS;
-	hdma_tim4_ch1.Instance->CMAR = (uint32_t)aSRC_Buffer;
-	hdma_tim4_ch1.Instance->CNDTR = 3;
-
-	htim4.Instance->DCR |= (0xc)|TIM_DCR_DBL_1;
-	htim4.Instance->DIER |=TIM_DIER_UDE;
-
-
-	HAL_TIM_Base_Start(&htim4);
-	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
-
-	hdma_tim4_ch1.Instance->CCR |= DMA_CCR_EN;
-
-
+  /* DMA1_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
 
 }
 
@@ -353,7 +329,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void dmaSetAddressAndSize(void)
+{
 
+	hdma_tim4_up.Instance->CPAR = (uint32_t)TIM4_DMAR_ADDRS;
+	hdma_tim4_up.Instance->CMAR = (uint32_t)aSRC_Buffer;
+	hdma_tim4_up.Instance->CNDTR = 3;
+
+	htim4.Instance->DCR = (0xc)|TIM_DCR_DBL_3;
+	htim4.Instance->DIER |= TIM_DIER_UDE|TIM_DIER_CC1DE;
+
+
+	HAL_TIM_Base_Start(&htim4);
+	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+
+	hdma_tim4_up.Instance->CCR |= DMA_CCR_EN;
+
+}
 /* USER CODE END 4 */
 
 /**
