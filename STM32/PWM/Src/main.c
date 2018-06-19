@@ -45,6 +45,8 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 DMA_HandleTypeDef hdma_tim4_up;
@@ -52,7 +54,9 @@ DMA_HandleTypeDef hdma_tim4_up;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 #define TIM4_DMAR_ADDRS ((uint32_t)0x4000084C)
-uint16_t aSRC_Buffer[6] = {0x100, 0x00,0x90,0x100,0x00, 0x50};
+//uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
+uint16_t aSRC_Buffer[6] = {0x100,0x400};
+uint16_t aSRC_Buffer2[6] = {0x2, 0x00,0x91,0x100,0x00, 0x50};
 
 /* USER CODE END PV */
 
@@ -61,7 +65,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);                                    
+static void MX_TIM4_Init(void);
+static void MX_ADC1_Init(void);
+                                    
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
                                 
@@ -69,6 +75,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
+int conversionWithADC();
+int adcValue=0;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -107,10 +115,12 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
+
+
 
   /* USER CODE END 2 */
 
@@ -122,7 +132,7 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
+	 adcValue = conversionWithADC();
   }
   /* USER CODE END 3 */
 
@@ -137,6 +147,7 @@ void SystemClock_Config(void)
 
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
@@ -163,6 +174,13 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV2;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
     /**Configure the Systick interrupt time 
     */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
@@ -173,6 +191,38 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* ADC1 init function */
+static void MX_ADC1_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Common config 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
 }
 
 /* TIM3 init function */
@@ -236,7 +286,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 49;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 1;
+  htim4.Init.Period = 1500;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -262,7 +312,7 @@ static void MX_TIM4_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.OCMode = TIM_OCMODE_ACTIVE;
+  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -329,23 +379,51 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+* @brief This function handles EXTI line1 interrupt.
+*/
+void EXTI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI1_IRQn 0 */
+	if((EXTI->PR&0x02)==0x02)
+		  dmaSetAddressAndSize();
+
+  /* USER CODE END EXTI1_IRQn 0 */
+
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+  /* USER CODE BEGIN EXTI1_IRQn 1 */
+
+  /* USER CODE END EXTI1_IRQn 1 */
+}
+
+// Function for ADC
+int conversionWithADC()
+{
+	HAL_ADC_Start(&hadc1);
+
+	if (HAL_ADC_PollForConversion(&hadc1, 1)!=HAL_OK)
+	{
+	}
+
+	while ((HAL_ADC_GetState(&hadc1) & HAL_ADC_STATE_REG_EOC ) != HAL_ADC_STATE_REG_EOC);
+	return HAL_ADC_GetValue(&hadc1);
+}
+
 static void dmaSetAddressAndSize(void)
 {
-
 	hdma_tim4_up.Instance->CPAR = (uint32_t)TIM4_DMAR_ADDRS;
 	hdma_tim4_up.Instance->CMAR = (uint32_t)aSRC_Buffer;
-	hdma_tim4_up.Instance->CNDTR = 3;
+	hdma_tim4_up.Instance->CNDTR = 2;
 
-	htim4.Instance->DCR = (0xc)|TIM_DCR_DBL_3;
+	htim4.Instance->DCR = (0xd);//TIM_DCR_DBL_1//(6<<8);
 	htim4.Instance->DIER |= TIM_DIER_UDE|TIM_DIER_CC1DE;
-
 
 	HAL_TIM_Base_Start(&htim4);
 	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
 
 	hdma_tim4_up.Instance->CCR |= DMA_CCR_EN;
-
 }
+
 /* USER CODE END 4 */
 
 /**
