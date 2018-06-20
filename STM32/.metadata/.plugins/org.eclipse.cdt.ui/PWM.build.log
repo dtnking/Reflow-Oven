@@ -1,9 +1,11 @@
-18:30:47 **** Incremental Build of configuration Debug for project PWM ****
+17:58:21 **** Incremental Build of configuration Debug for project PWM ****
 make all 
 Building file: ../Src/main.c
 Invoking: MCU GCC Compiler
 C:\Users\D203-02\Project\Reflow-Oven\STM32\PWM\Debug
-arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -DUSE_HAL_DRIVER -DSTM32F103xB -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
+<command-line>:0:0: warning: "__packed" redefined
+<command-line>:0:0: note: this is the location of the previous definition
 Finished building: ../Src/main.c
  
 Building target: PWM.elf
@@ -16,8 +18,8 @@ Generating hex and Printing size information:
 arm-none-eabi-objcopy -O ihex "PWM.elf" "PWM.hex"
 arm-none-eabi-size "PWM.elf"
    text	   data	    bss	    dec	    hex	filename
-   6436	     32	   1768	   8236	   202c	PWM.elf
+   7624	     36	   1812	   9472	   2500	PWM.elf
  
 
-18:30:48 Build Finished (took 893ms)
+17:58:22 Build Finished (took 923ms)
 

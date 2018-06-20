@@ -191,9 +191,6 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
-
-
-
 /**
 * @brief This function handles DMA1 channel7 global interrupt.
 */
