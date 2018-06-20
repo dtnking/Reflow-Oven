@@ -1,4 +1,4 @@
 build/*
 !build/Readme.txt
 
-\STM32\PWM\Src\Backup/*
+/STM32/PWM/Src/Backup/*
