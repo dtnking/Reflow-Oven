@@ -55,7 +55,7 @@ DMA_HandleTypeDef hdma_tim4_up;
 /* Private variables ---------------------------------------------------------*/
 #define TIM4_DMAR_ADDRS ((uint32_t)0x4000084C)
 //uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
-uint16_t aSRC_Buffer[4] = {0x100,0x190,0x300,0x318};
+uint16_t aSRC_Buffer[4] = {0x64,0x1,0x2,0x21,0x22};
 uint16_t aSRC_Buffer2[3] = {0x1000,0x130};
 
 /* USER CODE END PV */
@@ -233,7 +233,7 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 2499;
+  htim3.Init.Prescaler = 49;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 100;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -262,8 +262,8 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 58;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.Pulse = 50;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -283,9 +283,9 @@ static void MX_TIM4_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 49;
+  htim4.Init.Prescaler = 24;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 1000;
+  htim4.Init.Period = 100;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -426,7 +426,7 @@ static void dmaSetAddressAndSize(void)
 //	hdma_tim4_up.Instance->CCR &= DMA_CCR_EN;
 	hdma_tim4_up.Instance->CPAR = (uint32_t)TIM4_DMAR_ADDRS;
 	hdma_tim4_up.Instance->CMAR = (uint32_t)aSRC_Buffer;
-	hdma_tim4_up.Instance->CNDTR = 4;
+	hdma_tim4_up.Instance->CNDTR = 5;
 
 	htim4.Instance->DCR = (0xd);//TIM_DCR_DBL_1//(6<<8);
 	htim4.Instance->DIER |= TIM_DIER_UDE|TIM_DIER_CC1DE;
