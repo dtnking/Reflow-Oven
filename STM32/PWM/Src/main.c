@@ -49,14 +49,15 @@ ADC_HandleTypeDef hadc1;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-DMA_HandleTypeDef hdma_tim4_up;
+DMA_HandleTypeDef hdma_tim4_ch1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#define TIM4_DMAR_ADDRS ((uint32_t)0x4000084C)
+#define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
 //uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
-uint16_t aSRC_Buffer[4] = {0x64,0x1,0x2,0x21,0x22};
-uint16_t aSRC_Buffer2[3] = {0x1000,0x130};
+uint16_t aSRC_Buffer[] = {20,100,30,50,52,20,40};
+volatile int doPulse=0;
+
 
 /* USER CODE END PV */
 
@@ -91,7 +92,6 @@ int adcValue=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -117,8 +117,11 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+
+  dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -130,8 +133,12 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 	 //adcValue = conversionWithADC();
-	  volatile int i =0;
-	  i++;
+	if(doPulse){
+		int x = 300;
+		doPulse=0;
+		while(x--);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
+	}
   }
   /* USER CODE END 3 */
 
@@ -262,8 +269,8 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 50;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
+  sConfigOC.Pulse = 58;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -283,7 +290,7 @@ static void MX_TIM4_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 24;
+  htim4.Init.Prescaler = 49;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 100;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -313,7 +320,7 @@ static void MX_TIM4_Init(void)
 
   sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_OC_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -333,9 +340,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Channel7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
 
@@ -355,7 +362,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
@@ -395,10 +403,13 @@ void EXTI1_IRQHandler(void)
   /* USER CODE BEGIN EXTI1_IRQn 0 */
 
 	/*Configure GPIO pin Output Level */
-//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
 	if((EXTI->PR&0x02)==0x02){
-
-		dmaSetAddressAndSize();
+		doPulse=1;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_SET);
+		htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
+//		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
+		HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+		HAL_TIM_Base_Start(&htim4);
 	}
   /* USER CODE END EXTI1_IRQn 0 */
 
@@ -423,17 +434,15 @@ int conversionWithADC()
 
 static void dmaSetAddressAndSize(void)
 {
-//	hdma_tim4_up.Instance->CCR &= DMA_CCR_EN;
-	hdma_tim4_up.Instance->CPAR = (uint32_t)TIM4_DMAR_ADDRS;
-	hdma_tim4_up.Instance->CMAR = (uint32_t)aSRC_Buffer;
-	hdma_tim4_up.Instance->CNDTR = 5;
+	hdma_tim4_ch1.Instance->CPAR = (uint32_t)TIM4_CCR1_ADDRS;
+	hdma_tim4_ch1.Instance->CMAR = (uint32_t)aSRC_Buffer;
+	hdma_tim4_ch1.Instance->CNDTR = 4;
 
-	htim4.Instance->DCR = (0xd);//TIM_DCR_DBL_1//(6<<8);
-	htim4.Instance->DIER |= TIM_DIER_UDE|TIM_DIER_CC1DE;
-	hdma_tim4_up.Instance->CCR |= DMA_CCR_EN;
+//	htim4.Instance->DCR = (0xd);
+	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;
+	hdma_tim4_ch1.Instance->CCR |= DMA_CCR_EN;
 
-	HAL_TIM_Base_Start(&htim4);
-	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+
 }
 
 /* USER CODE END 4 */
