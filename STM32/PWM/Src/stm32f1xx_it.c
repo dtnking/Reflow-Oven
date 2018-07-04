@@ -41,6 +41,8 @@
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_tim4_ch1;
+extern uint16_t DMA_Buffer1[64];
+extern uint16_t DMA_Buffer2[64];
 
 /******************************************************************************/
 /*            Cortex-M3 Processor Interruption and Exception Handlers         */ 
@@ -199,7 +201,15 @@ void SysTick_Handler(void)
 void DMA1_Channel1_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
-
+//	  uint32_t flag_it = hdma_tim4_ch1.DmaBaseAddress->ISR;
+//	  uint32_t source_it = hdma_tim4_ch1.Instance->CCR;
+//
+//	  /* Half Transfer Complete Interrupt management ******************************/
+//	  if (((flag_it & (DMA_FLAG_HT1 << hdma_tim4_ch1.ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
+//	  {
+//
+//		  __HAL_DMA_CLEAR_FLAG(hdma_tim4_ch1, __HAL_DMA_GET_HT_FLAG_INDEX(hdma_tim4_ch1));
+//	  }
   /* USER CODE END DMA1_Channel1_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_tim4_ch1);
   /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */

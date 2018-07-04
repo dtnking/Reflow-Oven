@@ -54,8 +54,10 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 #define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
+#define MAX_NUM_ELEMENT		127
 //uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
-uint16_t aSRC_Buffer[] = {20,100,30,50,52,20,40};
+uint16_t DMA_Buffer1[4] = {20,100,30,50};
+uint16_t DMA_Buffer2[64]={0};
 volatile int doPulse=0;
 
 
@@ -76,8 +78,10 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
+static void userDefinePulseWidth(int numOfUnits,uint16_t data[]);
 int conversionWithADC();
 int adcValue=0;
+int n=0,x=0;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -92,8 +96,9 @@ int adcValue=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  /* USER CODE END 1 */
 
+
+  /* USER CODE END 1 */
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -111,12 +116,15 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+
   /* USER CODE BEGIN 2 */
+  userDefinePulseWidth(8,DMA_Buffer1);
 
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
@@ -318,7 +326,7 @@ static void MX_TIM4_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
+  sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -343,6 +351,7 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+
 
 }
 
@@ -372,7 +381,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB1 */
@@ -407,7 +416,8 @@ void EXTI1_IRQHandler(void)
 		doPulse=1;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_SET);
 		htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
-//		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
+		htim4.Instance->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;
+		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
 		HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
 		HAL_TIM_Base_Start(&htim4);
 	}
@@ -435,16 +445,26 @@ int conversionWithADC()
 static void dmaSetAddressAndSize(void)
 {
 	hdma_tim4_ch1.Instance->CPAR = (uint32_t)TIM4_CCR1_ADDRS;
-	hdma_tim4_ch1.Instance->CMAR = (uint32_t)aSRC_Buffer;
-	hdma_tim4_ch1.Instance->CNDTR = 4;
-
+	hdma_tim4_ch1.Instance->CMAR = (uint32_t)DMA_Buffer1;
+	hdma_tim4_ch1.Instance->CNDTR = 128;
 //	htim4.Instance->DCR = (0xd);
 	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;
-	hdma_tim4_ch1.Instance->CCR |= DMA_CCR_EN;
-
-
+	hdma_tim4_ch1.Instance->CCR |= DMA_CCR_EN|DMA_CCR_HTIE;
 }
 
+
+static void userDefinePulseWidth(int numOfUnits,uint16_t data[])
+{
+	int temp=numOfUnits/2,i=0;
+	n =sizeof(DMA_Buffer1)/sizeof(uint16_t);
+	while(i!=n){
+		while(x!=temp){
+		DMA_Buffer2[x++]=data[i];
+		}
+
+	i++;
+	}
+}
 /* USER CODE END 4 */
 
 /**
