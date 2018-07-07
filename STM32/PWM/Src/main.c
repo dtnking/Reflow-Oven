@@ -56,6 +56,15 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 #define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
 #define MAX_NUM_ELEMENT		127
 //uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
+
+struct UserInfo{
+	uint16_t pattern[5];
+	int i;
+};
+
+struct UserInfo userInfo= {{0,20,40,60,80},0};
+
+
 uint16_t DMA_Buffer1[4] = {20,100,30,50};
 uint16_t DMA_Buffer2[64]={0};
 volatile int doPulse=0;
@@ -78,7 +87,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
-static void userDefinePulseWidth(int numOfUnits,uint16_t data[]);
+static void userDefinePulseWidth(int *numOfUnits,int *data);
+static void calculationForPulseWidth(int *negativeHalf, int *positiveHalf);
+static void replicateData(int *negativeHalf, int *positiveHalf);
 int conversionWithADC();
 int adcValue=0;
 int n=0,x=0;
@@ -97,6 +108,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
+//  void (*patternCallBack)(int *negativeHalf, int *positiveHalf) = &userDefinePulseWidth;
 
   /* USER CODE END 1 */
   /* MCU Configuration----------------------------------------------------------*/
@@ -124,8 +136,11 @@ int main(void)
   MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
-  userDefinePulseWidth(8,DMA_Buffer1);
+//  userDefinePulseWidth(8,DMA_Buffer1);
+  int nH=20,pH=25;
+  replicateData(&nH,&pH);
 
+  calculationForPulseWidth(&nH,&pH);
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
@@ -453,9 +468,9 @@ static void dmaSetAddressAndSize(void)
 }
 
 
-static void userDefinePulseWidth(int numOfUnits,uint16_t data[])
+static void userDefinePulseWidth(int *numOfUnits,int *data)
 {
-	int temp=numOfUnits/2,i=0;
+	int temp=*numOfUnits/2,i=0;
 	n =sizeof(DMA_Buffer1)/sizeof(uint16_t);
 	while(i!=n){
 		while(x!=temp){
@@ -465,6 +480,109 @@ static void userDefinePulseWidth(int numOfUnits,uint16_t data[])
 	i++;
 	}
 }
+
+static void replicateData(int *negativeHalf, int *positiveHalf)
+{
+	int x=0;
+	while(x!=4)
+	{
+		DMA_Buffer1[x]= *negativeHalf;
+		DMA_Buffer1[x+1]= *positiveHalf;
+		x+=2;
+	}
+}
+
+static void calculationForPulseWidth(int *negativeHalf, int *positiveHalf)
+{
+	int value;
+	value = userInfo.pattern[userInfo.i];
+	userInfo.i++;
+	negativeHalf = &value;
+	positiveHalf = &value;
+}
+
+void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
+{
+  uint32_t flag_it = hdma->DmaBaseAddress->ISR;
+  uint32_t source_it = hdma->Instance->CCR;
+
+  /* Half Transfer Complete Interrupt management ******************************/
+  if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
+  {
+
+
+    /* Disable the half transfer interrupt if the DMA mode is not CIRCULAR */
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    {
+      /* Disable the half transfer interrupt */
+      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
+    }
+    /* Clear the half transfer complete flag */
+    __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
+
+    /* DMA peripheral state is not updated in Half Transfer */
+    /* but in Transfer Complete case */
+
+    if(hdma->XferHalfCpltCallback != NULL)
+    {
+      /* Half transfer callback */
+      hdma->XferHalfCpltCallback(hdma);
+    }
+  }
+
+  /* Transfer Complete Interrupt management ***********************************/
+  else if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
+  {
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    {
+      /* Disable the transfer complete and error interrupt */
+      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_TE | DMA_IT_TC);
+
+      /* Change the DMA state */
+      hdma->State = HAL_DMA_STATE_READY;
+    }
+    /* Clear the transfer complete flag */
+      __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));
+
+    /* Process Unlocked */
+    __HAL_UNLOCK(hdma);
+
+    if(hdma->XferCpltCallback != NULL)
+    {
+      /* Transfer complete callback */
+      hdma->XferCpltCallback(hdma);
+    }
+  }
+
+  /* Transfer Error Interrupt management **************************************/
+  else if (( RESET != (flag_it & (DMA_FLAG_TE1 << hdma->ChannelIndex))) && (RESET != (source_it & DMA_IT_TE)))
+  {
+    /* When a DMA transfer error occurs */
+    /* A hardware clear of its EN bits is performed */
+    /* Disable ALL DMA IT */
+    __HAL_DMA_DISABLE_IT(hdma, (DMA_IT_TC | DMA_IT_HT | DMA_IT_TE));
+
+    /* Clear all flags */
+    hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
+
+    /* Update error code */
+    hdma->ErrorCode = HAL_DMA_ERROR_TE;
+
+    /* Change the DMA state */
+    hdma->State = HAL_DMA_STATE_READY;
+
+    /* Process Unlocked */
+    __HAL_UNLOCK(hdma);
+
+    if (hdma->XferErrorCallback != NULL)
+    {
+      /* Transfer error callback */
+      hdma->XferErrorCallback(hdma);
+    }
+  }
+  return;
+}
+
 /* USER CODE END 4 */
 
 /**
