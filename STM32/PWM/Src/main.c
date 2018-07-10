@@ -53,6 +53,17 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+#define epsilon 	0.01
+#define dt 			0.01 //100mslooptime
+#define MAX 		100
+#define MIN 		0
+#define Kp 			0.1
+#define Kd 			0.01
+#define Ki 			0.005
+
+
+
 #define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
 #define MAX_NUM_ELEMENT		127
 //uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
@@ -88,8 +99,13 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
 static void userDefinePulseWidth(int *numOfUnits,int *data);
-static void calculationForPulseWidth(int *negativeHalf, int *positiveHalf);
+static void calculationForPulseWidth(float *pulse,int *negativeHalf, int *positiveHalf);
+static void XferHalfCpltCallback(DMA_HandleTypeDef *DmaHandle);
+static void XferCpltCallback(DMA_HandleTypeDef *DmaHandle);
+
+
 static void replicateData(int *negativeHalf, int *positiveHalf);
+static float PIDcal(float setpoint,float actual_position);
 int conversionWithADC();
 int adcValue=0;
 int n=0,x=0;
@@ -138,13 +154,19 @@ int main(void)
   /* USER CODE BEGIN 2 */
 //  userDefinePulseWidth(8,DMA_Buffer1);
   int nH=20,pH=25;
+  float pulse = PIDcal(80,50);
+
+  calculationForPulseWidth(&pulse,&nH,&pH);
+  replicateData(&nH,&pH);
   replicateData(&nH,&pH);
 
-  calculationForPulseWidth(&nH,&pH);
+
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -433,14 +455,17 @@ void EXTI1_IRQHandler(void)
 		htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
 		htim4.Instance->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;
 		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
-		HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+		HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
 		HAL_TIM_Base_Start(&htim4);
+		HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+		HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+
 	}
   /* USER CODE END EXTI1_IRQn 0 */
 
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
-  HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -459,12 +484,9 @@ int conversionWithADC()
 
 static void dmaSetAddressAndSize(void)
 {
-	hdma_tim4_ch1.Instance->CPAR = (uint32_t)TIM4_CCR1_ADDRS;
-	hdma_tim4_ch1.Instance->CMAR = (uint32_t)DMA_Buffer1;
-	hdma_tim4_ch1.Instance->CNDTR = 128;
-//	htim4.Instance->DCR = (0xd);
+	hdma_tim4_ch1.XferCpltCallback = XferCpltCallback;
+	hdma_tim4_ch1.XferHalfCpltCallback = XferHalfCpltCallback;
 	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;
-	hdma_tim4_ch1.Instance->CCR |= DMA_CCR_EN|DMA_CCR_HTIE;
 }
 
 
@@ -481,30 +503,62 @@ static void userDefinePulseWidth(int *numOfUnits,int *data)
 	}
 }
 
+static float PIDcal(float setpoint,float actual_position)
+{
+	static float pre_error= 0;
+	static float integral=0;
+	float error;
+	float derivative;
+	float output;
+	//CaculateP,I,D
+	error = setpoint - actual_position;
+	//In case of error too small then stop integration
+	if(abs(error)> epsilon)
+	{
+		integral = integral + error * dt;
+	}
+	derivative = (error - pre_error) / dt;
+	output = Kp * error + Ki * integral + Kd * derivative;
+	//Saturation Filter
+	if(output > MAX)
+	{
+		output = MAX;
+	}
+	else if(output < MIN)
+	{
+		output= MIN;
+	}
+	//Update error
+	pre_error = error;
+	return output;
+}
+
+
 static void replicateData(int *negativeHalf, int *positiveHalf)
 {
-	int x=0;
-	while(x!=4)
+	static int x=0;
+	int y=0;
+	while(y!=8)
 	{
-		DMA_Buffer1[x]= *negativeHalf;
-		DMA_Buffer1[x+1]= *positiveHalf;
+		DMA_Buffer1[x]= 100-*negativeHalf;
+		DMA_Buffer1[x+1]= 100;
 		x+=2;
+		y+=2;
 	}
 }
 
-static void calculationForPulseWidth(int *negativeHalf, int *positiveHalf)
+static void calculationForPulseWidth(float *pulse,int *negativeHalf, int *positiveHalf)
 {
-	int value;
-	value = userInfo.pattern[userInfo.i];
-	userInfo.i++;
-	negativeHalf = &value;
-	positiveHalf = &value;
+	*negativeHalf = (int)*pulse;
+	*positiveHalf = (int)*pulse;
 }
 
 void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 {
   uint32_t flag_it = hdma->DmaBaseAddress->ISR;
   uint32_t source_it = hdma->Instance->CCR;
+  hdma->State = HAL_DMA_STATE_READY;
+  __HAL_UNLOCK(hdma);
 
   /* Half Transfer Complete Interrupt management ******************************/
   if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
@@ -512,12 +566,13 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 
 
     /* Disable the half transfer interrupt if the DMA mode is not CIRCULAR */
-    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) != 0U)
     {
       /* Disable the half transfer interrupt */
       __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
     }
     /* Clear the half transfer complete flag */
+    hdma->DmaBaseAddress->IFCR |= DMA_IFCR_CHTIF1;
     __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
 
     /* DMA peripheral state is not updated in Half Transfer */
@@ -533,7 +588,7 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
   /* Transfer Complete Interrupt management ***********************************/
   else if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
   {
-    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) != 0U)
     {
       /* Disable the transfer complete and error interrupt */
       __HAL_DMA_DISABLE_IT(hdma, DMA_IT_TE | DMA_IT_TC);
@@ -542,7 +597,6 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
       hdma->State = HAL_DMA_STATE_READY;
     }
     /* Clear the transfer complete flag */
-      __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));
 
     /* Process Unlocked */
     __HAL_UNLOCK(hdma);
@@ -581,6 +635,20 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
     }
   }
   return;
+}
+
+static void XferCpltCallback(DMA_HandleTypeDef *hdma)
+{
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
+
+}
+
+static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
+{
+    __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
+
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
+
 }
 
 /* USER CODE END 4 */
