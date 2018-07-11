@@ -41,7 +41,7 @@
 #include "stm32f1xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "stdlib.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -53,30 +53,21 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define DESIRED_TEMP		200
 
 #define epsilon 	0.01
-#define dt 			0.01 //100mslooptime
-#define MAX 		100
-#define MIN 		0
-#define Kp 			0.1
-#define Kd 			0.01
-#define Ki 			0.005
-
-
+#define dt 			0.02 //200mslooptime
+#define MAX 		33000
+#define MIN 		-33000
+#define Kp 			15
+#define Kd 			3
+#define Ki 			0
 
 #define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
 #define MAX_NUM_ELEMENT		127
-//uint16_t aSRC_Buffer[6] = {0x5,0x50,0x500,0x800,0x1900,0x2500};
-
-struct UserInfo{
-	uint16_t pattern[5];
-	int i;
-};
-
-struct UserInfo userInfo= {{0,20,40,60,80},0};
 
 
-uint16_t DMA_Buffer1[4] = {20,100,30,50};
+uint16_t DMA_Buffer1[16] ;
 uint16_t DMA_Buffer2[64]={0};
 volatile int doPulse=0;
 
@@ -99,16 +90,19 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
 static void userDefinePulseWidth(int *numOfUnits,int *data);
-static void calculationForPulseWidth(float *pulse,int *negativeHalf, int *positiveHalf);
+static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf);
 static void XferHalfCpltCallback(DMA_HandleTypeDef *DmaHandle);
 static void XferCpltCallback(DMA_HandleTypeDef *DmaHandle);
 
 
 static void replicateData(int *negativeHalf, int *positiveHalf);
 static float PIDcal(float setpoint,float actual_position);
+
+float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
 int conversionWithADC();
 int adcValue=0;
 int n=0,x=0;
+int nH=20,pH=25;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -153,10 +147,10 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 //  userDefinePulseWidth(8,DMA_Buffer1);
-  int nH=20,pH=25;
-  float pulse = PIDcal(80,50);
 
-  calculationForPulseWidth(&pulse,&nH,&pH);
+  float pulse = (*patternCallBack)(DESIRED_TEMP,20);
+
+  calculationForPulseWidth(pulse,&nH,&pH);
   replicateData(&nH,&pH);
   replicateData(&nH,&pH);
 
@@ -165,7 +159,8 @@ int main(void)
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
-
+	HAL_TIM_Base_Start(&htim4);
+	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
 
   /* USER CODE END 2 */
 
@@ -450,15 +445,14 @@ void EXTI1_IRQHandler(void)
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
+		HAL_NVIC_DisableIRQ(EXTI1_IRQn);
 		doPulse=1;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_SET);
 		htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
 		htim4.Instance->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;
 		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
-		HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
-		HAL_TIM_Base_Start(&htim4);
-		HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
-		HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+		HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,16);
+
 
 	}
   /* USER CODE END EXTI1_IRQn 0 */
@@ -490,18 +484,6 @@ static void dmaSetAddressAndSize(void)
 }
 
 
-static void userDefinePulseWidth(int *numOfUnits,int *data)
-{
-	int temp=*numOfUnits/2,i=0;
-	n =sizeof(DMA_Buffer1)/sizeof(uint16_t);
-	while(i!=n){
-		while(x!=temp){
-		DMA_Buffer2[x++]=data[i];
-		}
-
-	i++;
-	}
-}
 
 static float PIDcal(float setpoint,float actual_position)
 {
@@ -518,7 +500,7 @@ static float PIDcal(float setpoint,float actual_position)
 		integral = integral + error * dt;
 	}
 	derivative = (error - pre_error) / dt;
-	output = Kp * error + Ki * integral + Kd * derivative;
+	output = Kp * error + Ki * integral - Kd * derivative;
 	//Saturation Filter
 	if(output > MAX)
 	{
@@ -530,7 +512,7 @@ static float PIDcal(float setpoint,float actual_position)
 	}
 	//Update error
 	pre_error = error;
-	return output;
+	return abs(output);
 }
 
 
@@ -538,27 +520,30 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 {
 	static int x=0;
 	int y=0;
+	if(x==16)
+		x=0;
 	while(y!=8)
 	{
-		DMA_Buffer1[x]= 100-*negativeHalf;
+		DMA_Buffer1[x]= *negativeHalf;
 		DMA_Buffer1[x+1]= 100;
 		x+=2;
 		y+=2;
 	}
 }
 
-static void calculationForPulseWidth(float *pulse,int *negativeHalf, int *positiveHalf)
+static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf)
 {
-	*negativeHalf = (int)*pulse;
-	*positiveHalf = (int)*pulse;
+	float pulseWidth = ((pulse / 33000) * 100);
+	*negativeHalf = (int)pulseWidth;
+	*positiveHalf = (int)pulseWidth;
 }
 
 void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 {
   uint32_t flag_it = hdma->DmaBaseAddress->ISR;
   uint32_t source_it = hdma->Instance->CCR;
-  hdma->State = HAL_DMA_STATE_READY;
-  __HAL_UNLOCK(hdma);
+//  hdma->State = HAL_DMA_STATE_READY;
+//  __HAL_UNLOCK(hdma);
 
   /* Half Transfer Complete Interrupt management ******************************/
   if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
@@ -572,7 +557,6 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
       __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
     }
     /* Clear the half transfer complete flag */
-    hdma->DmaBaseAddress->IFCR |= DMA_IFCR_CHTIF1;
     __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
 
     /* DMA peripheral state is not updated in Half Transfer */
@@ -641,13 +625,20 @@ static void XferCpltCallback(DMA_HandleTypeDef *hdma)
 {
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
 
+	float pulse = (*patternCallBack)(DESIRED_TEMP,150);
+
+	  calculationForPulseWidth(pulse,&nH,&pH);
+	  replicateData(&nH,&pH);
 }
 
 static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
-    __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
-
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
+
+	float pulse = (*patternCallBack)(DESIRED_TEMP,30);
+
+	  calculationForPulseWidth(pulse,&nH,&pH);
+	  replicateData(&nH,&pH);
 
 }
 

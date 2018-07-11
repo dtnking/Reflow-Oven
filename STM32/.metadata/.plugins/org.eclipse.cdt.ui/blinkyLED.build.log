@@ -1,0 +1,31 @@
+11:55:50 **** Incremental Build of configuration Debug for project blinkyLED ****
+make all 
+Building file: ../Src/main.c
+Invoking: MCU GCC Compiler
+C:\Users\D203-02\Project\TestInSTM32WithCException\Debug
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -DUSE_HAL_DRIVER -DSTM32F103xB -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Inc" -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Inc/CException" -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Drivers/STM32F1xx_HAL_Driver/Inc" -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"C:/Users/D203-02/Project/TestInSTM32WithCException/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
+../Src/main.c: In function 'main':
+../Src/main.c:169:13: error: invalid storage class for function 'MX_GPIO_Init'
+ static void MX_GPIO_Init(void)
+             ^~~~~~~~~~~~
+../Src/main.c:208:1: error: expected declaration or statement at end of input
+ }
+ ^
+../Src/main.c: At top level:
+../Src/main.c:56:13: warning: 'MX_GPIO_Init' used but never defined
+ static void MX_GPIO_Init(void);
+             ^~~~~~~~~~~~
+../Src/main.c:200:6: warning: '_Error_Handler' defined but not used [-Wunused-function]
+ void _Error_Handler(char *file, int line)
+      ^~~~~~~~~~~~~~
+../Src/main.c:169:13: warning: 'MX_GPIO_Init' defined but not used [-Wunused-function]
+ static void MX_GPIO_Init(void)
+             ^~~~~~~~~~~~
+../Src/main.c:119:6: warning: 'SystemClock_Config' defined but not used [-Wunused-function]
+ void SystemClock_Config(void)
+      ^~~~~~~~~~~~~~~~~~
+make: *** [Src/main.o] Error 1
+Src/subdir.mk:33: recipe for target 'Src/main.o' failed
+
+11:55:50 Build Finished (took 280ms)
+

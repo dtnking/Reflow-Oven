@@ -1,25 +1,12 @@
-17:58:21 **** Incremental Build of configuration Debug for project PWM ****
+15:29:20 **** Incremental Build of configuration Debug for project PWM ****
 make all 
-Building file: ../Src/main.c
-Invoking: MCU GCC Compiler
-C:\Users\D203-02\Project\Reflow-Oven\STM32\PWM\Debug
-arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
-<command-line>:0:0: warning: "__packed" redefined
-<command-line>:0:0: note: this is the location of the previous definition
-Finished building: ../Src/main.c
- 
 Building target: PWM.elf
 Invoking: MCU GCC Linker
-arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -specs=nosys.specs -specs=nano.specs -T"../STM32F103C8Tx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "PWM.elf" @"objects.list"   -lm
-Finished building target: PWM.elf
- 
-make --no-print-directory post-build
-Generating hex and Printing size information:
-arm-none-eabi-objcopy -O ihex "PWM.elf" "PWM.hex"
-arm-none-eabi-size "PWM.elf"
-   text	   data	    bss	    dec	    hex	filename
-   7624	     36	   1812	   9472	   2500	PWM.elf
- 
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -L"C:\Ac6\SystemWorkbench\/../CMSIS/Lib/GCC" -L"\pack\2.1.14\Libraries\CMS IS\Lib\GCC" -specs=nosys.specs -specs=nano.specs -T"../STM32F103C8Tx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "PWM.elf" @"objects.list"   -lm
+c:/ac6/systemworkbench/plugins/fr.ac6.mcu.externaltools.arm-none.win32_1.15.0.201708311556/tools/compiler/bin/../lib/gcc/arm-none-eabi/6.3.1/../../../../arm-none-eabi/bin/ld.exe: final link failed: No space left on device
+collect2.exe: error: ld returned 1 exit status
+make: *** [PWM.elf] Error 1
+makefile:35: recipe for target 'PWM.elf' failed
 
-17:58:22 Build Finished (took 923ms)
+15:29:21 Build Finished (took 411ms)
 

@@ -57,7 +57,7 @@ Drivers/STM32F1xx_HAL_Driver/Src/%.o: ../Drivers/STM32F1xx_HAL_Driver/Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Compiler'
 	@echo $(PWD)
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' -D__FPU_PRESENT '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -DARM_MATH_CM4 -I"D:/Project/c/Reflow-Oven/STM32/PWM/Inc" -I"D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' -D__FPU_PRESENT '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -DARM_MATH_CM4 -I"E:/Reflow-Oven/STM32/PWM/Inc" -I"E:/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"E:/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"E:/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"E:/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
