@@ -57,8 +57,8 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 
 #define epsilon 	0.01
 #define dt 			0.02 //200mslooptime
-#define MAX 		33000
-#define MIN 		-33000
+#define MAX 		3600
+#define MIN 		-3600
 #define Kp 			15
 #define Kd 			3
 #define Ki 			0
@@ -148,7 +148,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 //  userDefinePulseWidth(8,DMA_Buffer1);
 
-  float pulse = (*patternCallBack)(DESIRED_TEMP,20);
+  float pulse = (*patternCallBack)(DESIRED_TEMP,0);
 
   calculationForPulseWidth(pulse,&nH,&pH);
   replicateData(&nH,&pH);
@@ -497,10 +497,10 @@ static float PIDcal(float setpoint,float actual_position)
 	//In case of error too small then stop integration
 	if(abs(error)> epsilon)
 	{
-		integral = integral + error * dt;
+		integral = integral + error;
 	}
-	derivative = (error - pre_error) / dt;
-	output = Kp * error + Ki * integral - Kd * derivative;
+	derivative = (error - pre_error);
+	output = Kp * error + Ki * integral + Kd * derivative;
 	//Saturation Filter
 	if(output > MAX)
 	{
@@ -512,30 +512,45 @@ static float PIDcal(float setpoint,float actual_position)
 	}
 	//Update error
 	pre_error = error;
-	return abs(output);
+	return output;
 }
 
 
 static void replicateData(int *negativeHalf, int *positiveHalf)
 {
 	static int x=0;
-	int y=0;
+	int y=0,secNegPulse,secPosPulse;
+
+	//Compute for the HI to LO pulse of the OC
+	if(*negativeHalf >=90)
+		secNegPulse=100;
+	else
+		secNegPulse=*negativeHalf+10;
+
+	if(*positiveHalf >=40)
+		secPosPulse=50;
+	else
+		secPosPulse = *positiveHalf+10;
+	//End of computation
+
 	if(x==16)
 		x=0;
 	while(y!=8)
 	{
 		DMA_Buffer1[x]= *negativeHalf;
-		DMA_Buffer1[x+1]= 100;
-		x+=2;
-		y+=2;
+		DMA_Buffer1[x+1]= secNegPulse;
+		DMA_Buffer1[x+2]= *positiveHalf;
+		DMA_Buffer1[x+3]= secPosPulse;
+		x+=4;
+		y+=4;
 	}
 }
 
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf)
 {
-	float pulseWidth = ((pulse / 33000) * 100);
+	float pulseWidth = (100-((pulse / 3600) * 50));
 	*negativeHalf = (int)pulseWidth;
-	*positiveHalf = (int)pulseWidth;
+	*positiveHalf = (int)pulseWidth-50;
 }
 
 void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
