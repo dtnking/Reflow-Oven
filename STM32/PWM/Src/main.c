@@ -89,7 +89,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
-static void userDefinePulseWidth(int *numOfUnits,int *data);
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf);
 static void XferHalfCpltCallback(DMA_HandleTypeDef *DmaHandle);
 static void XferCpltCallback(DMA_HandleTypeDef *DmaHandle);
@@ -200,7 +199,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -210,12 +211,12 @@ void SystemClock_Config(void)
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV16;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV8;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -280,7 +281,7 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 49;
+  htim3.Init.Prescaler = 1599;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 100;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -309,7 +310,7 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 58;
+  sConfigOC.Pulse = 50;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -330,7 +331,7 @@ static void MX_TIM4_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 49;
+  htim4.Init.Prescaler = 1599;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 100;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -512,7 +513,9 @@ static float PIDcal(float setpoint,float actual_position)
 	}
 	//Update error
 	pre_error = error;
-	return output;
+	float pulseWidth = ((output / 3600) * 100);
+	return pulseWidth;
+
 }
 
 
@@ -522,15 +525,15 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 	int y=0,secNegPulse,secPosPulse;
 
 	//Compute for the HI to LO pulse of the OC
-	if(*negativeHalf >=90)
+	if(*negativeHalf >=95)
 		secNegPulse=100;
 	else
-		secNegPulse=*negativeHalf+10;
+		secNegPulse=*negativeHalf+5;
 
-	if(*positiveHalf >=40)
+	if(*positiveHalf >=45)
 		secPosPulse=50;
 	else
-		secPosPulse = *positiveHalf+10;
+		secPosPulse = *positiveHalf+5;
 	//End of computation
 
 	if(x==16)
@@ -548,7 +551,9 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf)
 {
-	float pulseWidth = (100-((pulse / 3600) * 50));
+	if(pulse==0)
+		pulse=1000000;
+	int pulseWidth = (int)(100-((pulse / 100) * 50));
 	*negativeHalf = (int)pulseWidth;
 	*positiveHalf = (int)pulseWidth-50;
 }
