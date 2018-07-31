@@ -1,4 +1,3 @@
-
 /**
   ******************************************************************************
   * @file           : main.c
@@ -90,6 +89,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* Private function prototypes -----------------------------------------------*/
 static void dmaSetAddressAndSize(void);
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf);
+static float potentiometerValConv(float adcValue);
 static void XferHalfCpltCallback(DMA_HandleTypeDef *DmaHandle);
 static void XferCpltCallback(DMA_HandleTypeDef *DmaHandle);
 
@@ -99,7 +99,7 @@ static float PIDcal(float setpoint,float actual_position);
 
 float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
 int conversionWithADC();
-int adcValue=0;
+float adcValue=0;
 int n=0,x=0;
 int nH=20,pH=25;
 /* USER CODE END PFP */
@@ -117,7 +117,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-//  void (*patternCallBack)(int *negativeHalf, int *positiveHalf) = &userDefinePulseWidth;
 
   /* USER CODE END 1 */
   /* MCU Configuration----------------------------------------------------------*/
@@ -145,11 +144,10 @@ int main(void)
   MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
-//  userDefinePulseWidth(8,DMA_Buffer1);
-
-  float pulse = (*patternCallBack)(DESIRED_TEMP,0);
-
-  calculationForPulseWidth(pulse,&nH,&pH);
+//  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
+  adcValue = conversionWithADC();
+  float firingAngle=potentiometerValConv(adcValue);
+  calculationForPulseWidth(firingAngle,&nH,&pH);
   replicateData(&nH,&pH);
   replicateData(&nH,&pH);
 
@@ -171,13 +169,16 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	 //adcValue = conversionWithADC();
-	if(doPulse){
-		int x = 300;
-		doPulse=0;
-		while(x--);
-		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
-	}
+//	adcValue = conversionWithADC();
+//	float firingAngle=potentiometerValConv(adcValue);
+//	calculationForPulseWidth(firingAngle,&nH,&pH);
+
+//	if(doPulse){
+//		int x = 300;
+//		doPulse=0;
+//		while(x--);
+//		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
+//	}
   }
   /* USER CODE END 3 */
 
@@ -484,6 +485,13 @@ static void dmaSetAddressAndSize(void)
 	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;
 }
 
+static float potentiometerValConv(float adcValue)
+{
+	if(adcValue>4000)
+		adcValue = 4000;
+	float firingAngle = ((adcValue/4000)*100);
+	return firingAngle;
+}
 
 
 static float PIDcal(float setpoint,float actual_position)
@@ -525,15 +533,15 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 	int y=0,secNegPulse,secPosPulse;
 
 	//Compute for the HI to LO pulse of the OC
-	if(*negativeHalf >=95)
+	if(*negativeHalf >=98)
 		secNegPulse=100;
 	else
-		secNegPulse=*negativeHalf+5;
+		secNegPulse=*negativeHalf+2;
 
-	if(*positiveHalf >=45)
+	if(*positiveHalf >=48)
 		secPosPulse=50;
 	else
-		secPosPulse = *positiveHalf+5;
+		secPosPulse = *positiveHalf+2;
 	//End of computation
 
 	if(x==16)
@@ -564,7 +572,9 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
   uint32_t source_it = hdma->Instance->CCR;
 //  hdma->State = HAL_DMA_STATE_READY;
 //  __HAL_UNLOCK(hdma);
-
+  adcValue = conversionWithADC();
+  float firingAngle=potentiometerValConv(adcValue);
+  calculationForPulseWidth(firingAngle,&nH,&pH);
   /* Half Transfer Complete Interrupt management ******************************/
   if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
   {
@@ -645,9 +655,12 @@ static void XferCpltCallback(DMA_HandleTypeDef *hdma)
 {
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
 
-	float pulse = (*patternCallBack)(DESIRED_TEMP,150);
-
-	  calculationForPulseWidth(pulse,&nH,&pH);
+//	float pulse = (*patternCallBack)(DESIRED_TEMP,150);
+//
+//	  calculationForPulseWidth(pulse,&nH,&pH);
+//	adcValue = conversionWithADC();
+//	  float firingAngle=potentiometerValConv(adcValue);
+//	  calculationForPulseWidth(firingAngle,&nH,&pH);
 	  replicateData(&nH,&pH);
 }
 
@@ -655,12 +668,17 @@ static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
 
-	float pulse = (*patternCallBack)(DESIRED_TEMP,30);
-
-	  calculationForPulseWidth(pulse,&nH,&pH);
+//	float pulse = (*patternCallBack)(DESIRED_TEMP,30);
+//
+//	  calculationForPulseWidth(pulse,&nH,&pH);
+//	adcValue = conversionWithADC();
+//	  float firingAngle=potentiometerValConv(adcValue);
+//	  calculationForPulseWidth(firingAngle,&nH,&pH);
 	  replicateData(&nH,&pH);
 
 }
+
+
 
 /* USER CODE END 4 */
 
