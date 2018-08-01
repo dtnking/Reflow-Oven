@@ -599,14 +599,6 @@ HAL_StatusTypeDef HAL_DMA_PollForTransfer(DMA_HandleTypeDef *hdma, uint32_t Comp
 }
 
 /**
-  * @brief  Handles DMA interrupt request.
-  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
-  *               the configuration information for the specified DMA Channel.  
-  * @retval None
-  */
-
-
-/**
   * @brief Register callbacks
   * @param hdma: pointer to a DMA_HandleTypeDef structure that contains
   *              the configuration information for the specified DMA Channel.

@@ -2,7 +2,7 @@
 <section name="Workbench">
 	<item value="CEXCEPTION_USE_CONFIG_FILE" key="org.eclipse.cdt.utils.ui.controls.FileListControl"/>
 	<section name="org.eclipse.cdt.ui.OPEN_ACTION_SELECTION_DIALOG_SECTION">
-		<item value="398" key="DIALOG_WIDTH"/>
+		<item value="538" key="DIALOG_WIDTH"/>
 		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
 		<item value="438" key="DIALOG_HEIGHT"/>
 		<item value="769" key="DIALOG_X_ORIGIN"/>

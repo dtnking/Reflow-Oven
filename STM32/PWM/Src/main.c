@@ -1,3 +1,4 @@
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -119,6 +120,7 @@ int main(void)
 
 
   /* USER CODE END 1 */
+
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -136,28 +138,30 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
-
   /* USER CODE BEGIN 2 */
 //  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
+
+
   adcValue = conversionWithADC();
-  float firingAngle=potentiometerValConv(adcValue);
+  float firingAngle = potentiometerValConv(adcValue);
   calculationForPulseWidth(firingAngle,&nH,&pH);
   replicateData(&nH,&pH);
   replicateData(&nH,&pH);
-
 
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
-	HAL_TIM_Base_Start(&htim4);
-	HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start(&htim4);
+  HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+  htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
+  HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
+
 
   /* USER CODE END 2 */
 
@@ -169,16 +173,6 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-//	adcValue = conversionWithADC();
-//	float firingAngle=potentiometerValConv(adcValue);
-//	calculationForPulseWidth(firingAngle,&nH,&pH);
-
-//	if(doPulse){
-//		int x = 300;
-//		doPulse=0;
-//		while(x--);
-//		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
-//	}
   }
   /* USER CODE END 3 */
 
@@ -328,13 +322,14 @@ static void MX_TIM4_Init(void)
 {
 
   TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_SlaveConfigTypeDef sSlaveConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 1599;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 100;
+  htim4.Init.Period = 500;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -353,6 +348,15 @@ static void MX_TIM4_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+  sSlaveConfig.TriggerFilter = 0;
+  if (HAL_TIM_SlaveConfigSynchronization(&htim4, &sSlaveConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC1REF;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
@@ -360,7 +364,7 @@ static void MX_TIM4_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
+  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -385,7 +389,6 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
 
 }
 
@@ -415,7 +418,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB1 */
@@ -447,15 +450,12 @@ void EXTI1_IRQHandler(void)
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
-		HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+
 		doPulse=1;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_SET);
-		htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
-		htim4.Instance->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;
-		htim4.Instance->CCMR1 |= TIM_OCMODE_TOGGLE;
-		HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,16);
-
-
+		adcValue = conversionWithADC();
+		int firingAngle=potentiometerValConv(adcValue);
+		calculationForPulseWidth(firingAngle,&nH,&pH);
+		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
 	}
   /* USER CODE END EXTI1_IRQn 0 */
 
@@ -544,9 +544,9 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 		secPosPulse = *positiveHalf+2;
 	//End of computation
 
-	if(x==16)
+	if(x==8)
 		x=0;
-	while(y!=8)
+	while(y!=4)
 	{
 		DMA_Buffer1[x]= *negativeHalf;
 		DMA_Buffer1[x+1]= secNegPulse;
@@ -559,8 +559,8 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf)
 {
-	if(pulse==0)
-		pulse=1000000;
+//	if(pulse==0)
+//		pulse=1000000;
 	int pulseWidth = (int)(100-((pulse / 100) * 50));
 	*negativeHalf = (int)pulseWidth;
 	*positiveHalf = (int)pulseWidth-50;
@@ -570,11 +570,7 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 {
   uint32_t flag_it = hdma->DmaBaseAddress->ISR;
   uint32_t source_it = hdma->Instance->CCR;
-//  hdma->State = HAL_DMA_STATE_READY;
-//  __HAL_UNLOCK(hdma);
-  adcValue = conversionWithADC();
-  float firingAngle=potentiometerValConv(adcValue);
-  calculationForPulseWidth(firingAngle,&nH,&pH);
+
   /* Half Transfer Complete Interrupt management ******************************/
   if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
   {
@@ -654,28 +650,13 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 static void XferCpltCallback(DMA_HandleTypeDef *hdma)
 {
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
-
-//	float pulse = (*patternCallBack)(DESIRED_TEMP,150);
-//
-//	  calculationForPulseWidth(pulse,&nH,&pH);
-//	adcValue = conversionWithADC();
-//	  float firingAngle=potentiometerValConv(adcValue);
-//	  calculationForPulseWidth(firingAngle,&nH,&pH);
 	  replicateData(&nH,&pH);
 }
 
 static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
-
-//	float pulse = (*patternCallBack)(DESIRED_TEMP,30);
-//
-//	  calculationForPulseWidth(pulse,&nH,&pH);
-//	adcValue = conversionWithADC();
-//	  float firingAngle=potentiometerValConv(adcValue);
-//	  calculationForPulseWidth(firingAngle,&nH,&pH);
 	  replicateData(&nH,&pH);
-
 }
 
 
