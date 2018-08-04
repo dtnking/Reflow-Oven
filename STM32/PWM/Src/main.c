@@ -157,6 +157,8 @@ int main(void)
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   HAL_TIM_Base_Start(&htim4);
   HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
   htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
@@ -388,8 +390,6 @@ static void MX_DMA_Init(void)
   /* DMA interrupt init */
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
 }
 
 /** Configure pins as 
@@ -436,7 +436,6 @@ static void MX_GPIO_Init(void)
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 }
 
@@ -447,15 +446,34 @@ static void MX_GPIO_Init(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
+	static int state=0;
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
-
 		doPulse=1;
 		adcValue = conversionWithADC();
 		int firingAngle=potentiometerValConv(adcValue);
 		calculationForPulseWidth(firingAngle,&nH,&pH);
-		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
+
+	/* 	When the power is off, the firing angle is set to a very large value so that the CNT will never reach the value.
+	 * 	However, the OC will also never reaches the value to ask DMA to transfer another set of data.
+	 * 	So, CCR is hard-coded with a value to restart the DMA transfer when the power is on.
+	 *
+	 */
+		if(nH==100||pH==50)
+			state = 1;
+		if(state==1)
+		{
+			if(nH!=100||pH!=50)
+			{
+				replicateData(&nH,&pH);
+				replicateData(&nH,&pH);
+				htim4.Instance->CCR1 =nH;
+				state =0;
+			}
+		}
+
+	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
 	}
   /* USER CODE END EXTI1_IRQn 0 */
 
@@ -533,13 +551,21 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 	int y=0,secNegPulse,secPosPulse;
 
 	//Compute for the HI to LO pulse of the OC
-	if(*negativeHalf >=98)
-		secNegPulse=100;
+	if(*negativeHalf >=98){
+		if(*negativeHalf == 100)
+			*negativeHalf = 500;
+		else
+			secNegPulse=100;
+	}
 	else
 		secNegPulse=*negativeHalf+2;
 
-	if(*positiveHalf >=48)
-		secPosPulse=50;
+	if(*positiveHalf >=48){
+		if(*positiveHalf == 50)
+			*positiveHalf = 500;
+		else
+			secPosPulse=50;
+	}
 	else
 		secPosPulse = *positiveHalf+2;
 	//End of computation
@@ -560,7 +586,7 @@ static void replicateData(int *negativeHalf, int *positiveHalf)
 static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf)
 {
 //	if(pulse==0)
-//		pulse=1000000;
+//		pulse=1;
 	int pulseWidth = (int)(100-((pulse / 100) * 50));
 	*negativeHalf = (int)pulseWidth;
 	*positiveHalf = (int)pulseWidth-50;
