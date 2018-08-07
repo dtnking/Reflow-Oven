@@ -57,6 +57,4 @@ void test_replicateData(void)
 	TEST_ASSERT_EQUAL_INT(92, DMA_Buffer1[5]);
 	TEST_ASSERT_EQUAL_INT(40, DMA_Buffer1[6]);
 	TEST_ASSERT_EQUAL_INT(42, DMA_Buffer1[7]);
-
-
 }

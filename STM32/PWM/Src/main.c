@@ -43,7 +43,6 @@
 /* USER CODE BEGIN Includes */
 #include "stdlib.h"
 #include "angleFiring.h"
-#include "add.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -154,7 +153,6 @@ int main(void)
   calculationForPulseWidth(firingAngle,&nH,&pH);
   replicateData(&nH,&pH);
   replicateData(&nH,&pH);
-  test = add(2,5);
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
