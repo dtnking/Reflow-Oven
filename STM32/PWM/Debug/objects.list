@@ -12,7 +12,7 @@
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o"
-"Src/add.o"
+"Src/angleFiring.o"
 "Src/main.o"
 "Src/stm32f1xx_hal_msp.o"
 "Src/stm32f1xx_it.o"

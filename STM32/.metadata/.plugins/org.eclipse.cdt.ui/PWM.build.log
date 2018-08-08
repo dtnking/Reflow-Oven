@@ -1,6 +1,29 @@
-19:45:51 **** Incremental Build of configuration Debug for project PWM ****
+19:01:55 **** Incremental Build of configuration Debug for project PWM ****
 make all 
-make: Nothing to be done for 'all'.
+Building file: ../Src/main.c
+Invoking: MCU GCC Compiler
+C:\Users\D203-02\Project\Reflow-Oven\STM32\PWM\Debug
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' -D__FPU_PRESENT '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB '-D__weak=__attribute__((weak))' '-D__packed=__attribute__((__packed__))' -DARM_MATH_CM4 -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"C:/Users/D203-02/Project/Reflow-Oven/STM32/PWM/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
+<command-line>:0:0: warning: "__packed" redefined
+<command-line>:0:0: note: this is the location of the previous definition
+../Src/main.c: In function 'main':
+../Src/main.c:149:7: warning: unused variable 'firingAngle' [-Wunused-variable]
+   int firingAngle = potentiometerValConv(adcValue);
+       ^~~~~~~~~~~
+Finished building: ../Src/main.c
+ 
+Building target: PWM.elf
+Invoking: MCU GCC Linker
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -L"C:\Ac6\SystemWorkbench\/../CMSIS/Lib/GCC" -L"\pack\2.1.14\Libraries\CMS IS\Lib\GCC" -specs=nosys.specs -specs=nano.specs -T"../STM32F103C8Tx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "PWM.elf" @"objects.list"   -lm
+Finished building target: PWM.elf
+ 
+make --no-print-directory post-build
+Generating hex and Printing size information:
+arm-none-eabi-objcopy -O ihex "PWM.elf" "PWM.hex"
+arm-none-eabi-size "PWM.elf"
+   text	   data	    bss	    dec	    hex	filename
+  12420	     32	   1880	  14332	   37fc	PWM.elf
+ 
 
-19:45:51 Build Finished (took 180ms)
+19:01:56 Build Finished (took 1s.7ms)
 
