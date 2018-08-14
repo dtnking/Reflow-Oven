@@ -16,29 +16,37 @@ void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 	int y=0,secNegPulse=0,secPosPulse=0;
 
 	//Compute for the HI to LO pulse of the OC
-	if(*negativeHalf + COMPENSATE_DELAY >= (100-COMPENSATE_DELAY)){
+	if(*negativeHalf + COMPENSATE_DELAY >= MAX_NEG_TIME){
 		if(*negativeHalf + COMPENSATE_DELAY >= 100)
 			*negativeHalf = 500;
-		else
+		else{
+			*negativeHalf=MAX_NEG_TIME;
 			secNegPulse=100;
+		}
+
 	}
-	else if(*negativeHalf + COMPENSATE_DELAY <= 53){
-		secNegPulse=MAX_NEG_TIME;
+	else if(*negativeHalf + COMPENSATE_DELAY <= MIN_NEG_TIME){
+		*negativeHalf = 50;
+		secNegPulse=MIN_NEG_TIME;
 	}
 	else
-		secNegPulse = *negativeHalf + COMPENSATE_DELAY + 2;
+		secNegPulse = *negativeHalf + COMPENSATE_DELAY + DEFAULT_PWIDTH;	//default pulse width
 
-	if(*positiveHalf+ COMPENSATE_DELAY >=(50-COMPENSATE_DELAY)){
+
+	if(*positiveHalf+ COMPENSATE_DELAY >= MAX_POS_TIME){
 		if(*positiveHalf + COMPENSATE_DELAY >= 50)
 			*positiveHalf = 500;
-		else
+		else{
+			*positiveHalf = MAX_POS_TIME;
 			secPosPulse=50;
+		}
 	}
-	else if(*positiveHalf + COMPENSATE_DELAY <= 2){
-		secPosPulse= MAX_POS_TIME;
+	else if(*positiveHalf + COMPENSATE_DELAY <= MIN_POS_TIME){
+		*positiveHalf = 0;
+		secPosPulse= MIN_POS_TIME;
 	}
 	else
-		secPosPulse = *positiveHalf+ COMPENSATE_DELAY + 2;
+		secPosPulse = *positiveHalf+ COMPENSATE_DELAY + DEFAULT_PWIDTH;
 	//End of computation
 
 	if(x==8)

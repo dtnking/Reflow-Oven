@@ -147,14 +147,14 @@ int main(void)
 
   adcValue = conversionWithADC();
   int firingAngle = potentiometerValConv(adcValue);
-  convertFiringPercentageToTimes(100,&nH,&pH);
+  convertFiringPercentageToTimes(firingAngle,&nH,&pH);
   getFiringTimesAndCopyIntoBuffer(&nH,&pH);
   getFiringTimesAndCopyIntoBuffer(&nH,&pH);
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
-//  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
   HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
@@ -459,11 +459,11 @@ void EXTI1_IRQHandler(void)
 	 * 	So, CCR is hard-coded with a value to restart the DMA transfer when the power is on.
 	 *
 	 */
-		if(nH>=97||pH>=47)
+		if(nH>=100-COMPENSATE_DELAY||pH>=50-COMPENSATE_DELAY)
 			state = 1;
 		if(state==1)
 		{
-			if(nH<97||pH<47)
+			if(nH<100-COMPENSATE_DELAY||pH<50-COMPENSATE_DELAY)
 			{
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
