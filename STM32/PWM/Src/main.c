@@ -161,9 +161,6 @@ int main(void)
   HAL_TIM_Base_Start(&htim4);
   HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
 
-
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */

@@ -10,6 +10,17 @@ void convertFiringPercentageToTimes(float pulse,int *negativeHalf, int *positive
 	*positiveHalf = (int)pulseWidth-50;
 }
 
+int getPulseWidth(void)
+{
+	int pulseWidth;
+	static int x;
+	if(x==2)
+		x=0;
+	pulseWidth = DMA_Buffer1[x+1]-DMA_Buffer1[x];
+	x+=2;
+	return pulseWidth;
+}
+
 void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 {
 	static int x=0;
@@ -49,6 +60,10 @@ void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 		secPosPulse = *positiveHalf+ COMPENSATE_DELAY + DEFAULT_PWIDTH;
 	//End of computation
 
+
+	/*
+	 * Write into the DMA buffer
+	 */
 	if(x==8)
 		x=0;
 	while(y!=4)

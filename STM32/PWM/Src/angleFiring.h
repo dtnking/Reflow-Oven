@@ -11,4 +11,5 @@ extern uint16_t DMA_Buffer1[16] ;
 #define COMPENSATE_DELAY 	0
 void convertFiringPercentageToTimes(float pulse,int *negativeHalf, int *positiveHalf);
 void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf);
+int getPulseWidth(void);
 #endif // _ANGLEFIRING_H
