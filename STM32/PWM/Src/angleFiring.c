@@ -13,7 +13,7 @@ void convertFiringPercentageToTimes(float pulse,int *negativeHalf, int *positive
 int getPulseWidth(void)
 {
 	int pulseWidth;
-	static int x;
+	static int x=0;
 	if(x==2)
 		x=0;
 	pulseWidth = DMA_Buffer1[x+1]-DMA_Buffer1[x];
@@ -32,7 +32,7 @@ void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 			*negativeHalf = 500;
 		else{
 			*negativeHalf=MAX_NEG_TIME;
-			secNegPulse=100;
+			secNegPulse=97;
 		}
 
 	}
@@ -46,10 +46,10 @@ void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 
 	if(*positiveHalf+ COMPENSATE_DELAY >= MAX_POS_TIME){
 		if(*positiveHalf + COMPENSATE_DELAY >= 50)
-			*positiveHalf = 500;
+			*positiveHalf = 500;			// The CNT will never reach this value, so it will never fire.
 		else{
 			*positiveHalf = MAX_POS_TIME;
-			secPosPulse=50;
+			secPosPulse=47;
 		}
 	}
 	else if(*positiveHalf + COMPENSATE_DELAY <= MIN_POS_TIME){

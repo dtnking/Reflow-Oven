@@ -145,11 +145,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 //  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
 
-  adcValue = conversionWithADC();
-  int firingAngle = potentiometerValConv(adcValue);
-  convertFiringPercentageToTimes(firingAngle,&nH,&pH);
-  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
+
   dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
@@ -442,7 +438,7 @@ static void MX_GPIO_Init(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
-	static int state=0;
+	static int state=0,bufferState=0;
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
@@ -450,6 +446,12 @@ void EXTI1_IRQHandler(void)
 		adcValue = conversionWithADC();
 		int firingAngle=potentiometerValConv(adcValue);
 		convertFiringPercentageToTimes(firingAngle,&nH,&pH);
+
+		if(bufferState==NON_BUFFERED){
+			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
+			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
+			  bufferState = BUFFERED;
+		}
 
 	/* 	When the power is off, the firing angle is set to a very large value so that the CNT will never reach the value.
 	 * 	However, the OC will also never reaches the value to ask DMA to transfer another set of data.
@@ -464,7 +466,7 @@ void EXTI1_IRQHandler(void)
 			{
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-				htim4.Instance->CCR1 =nH;
+				htim4.Instance->CCR1 = nH;
 				state =0;
 			}
 		}
