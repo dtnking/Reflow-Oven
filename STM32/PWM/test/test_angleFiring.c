@@ -26,6 +26,15 @@ void test_functionality_convertFiringPercentageToTimes(void)
 	convertFiringPercentageToTimes(5,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(97,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(47,positiveHalf);
+	convertFiringPercentageToTimes(96,&negativeHalf,&positiveHalf);
+	TEST_ASSERT_EQUAL_INT(52,negativeHalf);
+	TEST_ASSERT_EQUAL_INT(2,positiveHalf);
+	convertFiringPercentageToTimes(97,&negativeHalf,&positiveHalf);
+	TEST_ASSERT_EQUAL_INT(51,negativeHalf);
+	TEST_ASSERT_EQUAL_INT(1,positiveHalf);
+	convertFiringPercentageToTimes(98,&negativeHalf,&positiveHalf);
+	TEST_ASSERT_EQUAL_INT(51,negativeHalf);
+	TEST_ASSERT_EQUAL_INT(1,positiveHalf);
 	convertFiringPercentageToTimes(99,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(50,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(50,negativeHalf);
@@ -104,7 +113,7 @@ void test_dataCopyIntoBuffer_with_maxLimit_FiringAngle(void)
 }
 
 /*
- *	When the pulse is smaller than the minimum value(positiveHalf = 6,negativeHalf = 56),
+ *	When the pulse is smaller than the minimum value(positiveHalf = 5,negativeHalf = 55),
  *  the pulse width is 5.
  */
 void test_function_getPulseWidth_MinLimit_expected_equal_5(void){
@@ -118,13 +127,36 @@ void test_function_getPulseWidth_MinLimit_expected_equal_5(void){
 	TEST_ASSERT_EQUAL_INT(5,pulseWidth);
 }
 
+void test_function_getPulseWidth_MinLimit2_expected_equal_5(void){
+	int negativeHalf = 55;
+	int positiveHalf = 5;
+	int pulseWidth;
+	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(5,pulseWidth);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(5,pulseWidth);
+}
+
 /*
  *	When the pulse is greater than the maximum value(positiveHalf = 92,negativeHalf = 42),
  *  the pulse width is 5
  */
 void test_function_getPulseWidth_MaxLimit_expected_equal_5(void){
-	int negativeHalf = 94;
-	int positiveHalf = 44;
+	int negativeHalf = 92;
+	int positiveHalf = 42;
+	int pulseWidth;
+	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
+	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(5,pulseWidth);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(5,pulseWidth);
+}
+
+void test_function_getPulseWidth_MaxLimit2_expected_equal_5(void){
+	int negativeHalf = 97;
+	int positiveHalf = 47;
 	int pulseWidth;
 	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
 	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
@@ -150,9 +182,22 @@ void test_function_getPulseWidth_defaultPulseWidth_expected_equal_2(void){
 	TEST_ASSERT_EQUAL_INT(2,pulseWidth);
 }
 
+void test_function_getPulseWidth_defaultPulseWidth2_expected_equal_2(void){
+	int negativeHalf = 91;
+	int positiveHalf = 41;
+	int pulseWidth;
+	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
+	getFiringTimesAndCopyIntoBuffer(&negativeHalf,&positiveHalf);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(2,pulseWidth);
+	pulseWidth = getPulseWidth();
+	TEST_ASSERT_EQUAL_INT(2,pulseWidth);
+}
+
 /*
  *	Given an initial value, run the test by increment the value(0-100).
  * 	So every possible value is being tested (100 tests).
+ *  If the pulse width is larger than 6, then it will fails.
  */
 void test_functionality_pulseWidth(void){
 	static int negativeHalf = 50;
@@ -171,8 +216,8 @@ void test_functionality_pulseWidth(void){
 				y=1;
 
 			if(x>42){
-				negativeHalf = negativeHalf-44+x;
-				positiveHalf = positiveHalf-44+x;
+				negativeHalf = negativeHalf-42+x;
+				positiveHalf = positiveHalf-42+x;
 			}
 			else{
 				negativeHalf += y;
@@ -180,10 +225,10 @@ void test_functionality_pulseWidth(void){
 			}
 		}
 		pulseWidth = getPulseWidth();
-		printf("The firing times is %i and the pulse width is %i\n",negativeHalf,pulseWidth);
+		printf("The firing times is %i and the pulse width is %i\n",negativeHalf-1,pulseWidth);
 		TEST_ASSERT_LESS_THAN_INT(6, pulseWidth);
 		pulseWidth = getPulseWidth();
-		printf("The firing times is %i and the pulse width is %i\n\n",positiveHalf,pulseWidth);
+		printf("The firing times is %i and the pulse width is %i\n\n",positiveHalf-1,pulseWidth);
 		TEST_ASSERT_LESS_THAN_INT(6, pulseWidth);
 	}
 }
