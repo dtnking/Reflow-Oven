@@ -1,6 +1,7 @@
 #include "angleFiring.h"
 
 uint16_t DMA_Buffer1[16] ;
+DMA_HandleTypeDef hdma_tim4_ch1;
 
 
 void convertFiringPercentageToTimes(float pulse,int *negativeHalf, int *positiveHalf)
@@ -28,8 +29,10 @@ void getFiringTimesAndCopyIntoBuffer(int *negativeHalf, int *positiveHalf)
 
 	//Compute for the HI to LO pulse of the OC
 	if(*negativeHalf + COMPENSATE_DELAY >= MAX_NEG_TIME){
-		if(*negativeHalf + COMPENSATE_DELAY >= 100)
+		if(*negativeHalf + COMPENSATE_DELAY >= 100){
+//			hdma_tim4_ch1.Instance->CCR &= 0;
 			*negativeHalf = 500;
+		}
 		else{
 			*negativeHalf=MAX_NEG_TIME;
 			secNegPulse=97;

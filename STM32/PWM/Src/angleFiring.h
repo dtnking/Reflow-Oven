@@ -1,6 +1,7 @@
 #ifndef _ANGLEFIRING_H
 #define _ANGLEFIRING_H
 #include "stdint.h"
+#include "stm32f1xx_hal.h"
 extern uint16_t DMA_Buffer1[16] ;
 
 #define MIN_POS_TIME		5
