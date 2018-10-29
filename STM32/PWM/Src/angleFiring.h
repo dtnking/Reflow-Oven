@@ -2,14 +2,17 @@
 #define _ANGLEFIRING_H
 #include "stdint.h"
 #include "stm32f1xx_hal.h"
-extern uint16_t DMA_Buffer1[16] ;
+TIM_HandleTypeDef htim4;
+extern uint16_t DMA_Buffer1[8] ;
 
-#define MIN_POS_TIME		5
-#define MIN_NEG_TIME		55
-#define MAX_POS_TIME		42
-#define MAX_NEG_TIME		92
+#define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
+#define MAX_MARGIN			6
+#define MIN_POS_TIME		4 + COMPENSATE_DELAY
+#define MIN_NEG_TIME		54 + COMPENSATE_DELAY
+#define MAX_POS_TIME		43 + COMPENSATE_DELAY
+#define MAX_NEG_TIME		93 + COMPENSATE_DELAY
 #define DEFAULT_PWIDTH		2
-#define COMPENSATE_DELAY 	0
+#define COMPENSATE_DELAY 	3
 #define NON_BUFFERED		0
 #define BUFFERED			1
 

@@ -100,8 +100,8 @@ static float PIDcal(float setpoint,float actual_position);
 float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
 int conversionWithADC();
 float adcValue=0;
-int n=0,x=0;
-int nH=20,pH=25;
+int n=1000,x=1000;
+int nH=0,pH=0;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -446,7 +446,7 @@ void EXTI1_IRQHandler(void)
 		adcValue = conversionWithADC();
 		int firingAngle=potentiometerValConv(adcValue);
 		convertFiringPercentageToTimes(firingAngle,&nH,&pH);
-
+		compensateFiringTimes(&nH,&pH);
 		if(bufferState==NON_BUFFERED){
 			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
@@ -458,15 +458,19 @@ void EXTI1_IRQHandler(void)
 	 * 	So, CCR is hard-coded with a value to restart the DMA transfer when the power is on.
 	 *
 	 */
-		if(nH>=100-COMPENSATE_DELAY||pH>=50-COMPENSATE_DELAY)
+		if(nH >= 100 + COMPENSATE_DELAY||pH >= 50 + COMPENSATE_DELAY)
 			state = 1;
 		if(state==1)
 		{
-			if(nH<100-COMPENSATE_DELAY||pH<50-COMPENSATE_DELAY)
+			if(nH < 100 + COMPENSATE_DELAY||pH < 50 + COMPENSATE_DELAY)
 			{
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-				htim4.Instance->CCR1 = nH;
+//				HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
+				HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+
+
+				// htim4.Instance->CCR1 = nH;
 				state =0;
 			}
 		}
@@ -505,7 +509,9 @@ static float potentiometerValConv(float adcValue)
 {
 	if(adcValue>4000)
 		adcValue = 4000;
-	float firingAngle = ((adcValue/4000)*100);
+	if(adcValue<300)
+		adcValue = 0;
+	float firingAngle = ((adcValue/3700)*100);
 	return firingAngle;
 }
 
@@ -625,14 +631,16 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 
 static void XferCpltCallback(DMA_HandleTypeDef *hdma)
 {
-	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
 	getFiringTimesAndCopyIntoBuffer(&nH,&pH);
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
+
 }
 
 static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
-	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
+
 	getFiringTimesAndCopyIntoBuffer(&nH,&pH);
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
 }
 
 
