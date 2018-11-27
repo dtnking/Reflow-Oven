@@ -1,6 +1,6 @@
 #include "angleFiring.h"
 
-uint16_t DMA_Buffer1[8] ;
+uint16_t DMA_Buffer1[8];
 DMA_HandleTypeDef hdma_tim4_ch1;
 
 

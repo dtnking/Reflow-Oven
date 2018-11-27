@@ -24,7 +24,8 @@ Src/main.o: ../Src/main.c D:/Project/c/Reflow-Oven/STM32/PWM/Inc/main.h \
  D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
  D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Src/angleFiring.h
+ D:/Project/c/Reflow-Oven/STM32/PWM/Inc/angleFiring.h \
+ D:/Project/c/Reflow-Oven/STM32/PWM/Inc/DbgMcu.h
 
 D:/Project/c/Reflow-Oven/STM32/PWM/Inc/main.h:
 
@@ -78,4 +79,6 @@ D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ha
 
 D:/Project/c/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 
-../Src/angleFiring.h:
+D:/Project/c/Reflow-Oven/STM32/PWM/Inc/angleFiring.h:
+
+D:/Project/c/Reflow-Oven/STM32/PWM/Inc/DbgMcu.h:

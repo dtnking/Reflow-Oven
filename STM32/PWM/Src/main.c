@@ -41,8 +41,10 @@
 #include "stm32f1xx_hal.h"
 
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "stdlib.h"
 #include "angleFiring.h"
+#include "DbgMcu.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -80,6 +82,7 @@ static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
+extern void initialise_monitor_handles(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
@@ -116,7 +119,9 @@ int nH=0,pH=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  initialise_monitor_handles();
+  haltTimerxWhenDebugging(DBG_TIM3_STOP);
+  haltTimerxWhenDebugging(DBG_TIM4_STOP);
 
   /* USER CODE END 1 */
 
@@ -155,7 +160,7 @@ int main(void)
   htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
   HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
   HAL_TIM_Base_Start(&htim4);
-  HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+
 
   /* USER CODE END 2 */
 
@@ -344,7 +349,7 @@ static void MX_TIM4_Init(void)
 
   sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
   sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
-  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_FALLING;
   sSlaveConfig.TriggerFilter = 0;
   if (HAL_TIM_SlaveConfigSynchronization(&htim4, &sSlaveConfig) != HAL_OK)
   {
@@ -410,12 +415,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 
   /*Configure GPIO pin : PB1 */
   GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -442,6 +448,11 @@ void EXTI1_IRQHandler(void)
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
+
+//		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,RESET);
+
 		doPulse=1;
 		adcValue = conversionWithADC();
 		int firingAngle=potentiometerValConv(adcValue);
@@ -451,8 +462,16 @@ void EXTI1_IRQHandler(void)
 			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
 			  bufferState = BUFFERED;
-		}
 
+
+		}
+#ifdef DEBUG_LOG
+		printf("\nraw ADC: %f",adcValue);
+		printf("\nfiring percentage: %i",firingAngle);
+		printf("\nt1: %i",nH);
+		printf("\nt2: %i",pH);
+
+#endif
 	/* 	When the power is off, the firing angle is set to a very large value so that the CNT will never reach the value.
 	 * 	However, the OC will also never reaches the value to ask DMA to transfer another set of data.
 	 * 	So, CCR is hard-coded with a value to restart the DMA transfer when the power is on.
@@ -475,7 +494,7 @@ void EXTI1_IRQHandler(void)
 			}
 		}
 
-	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
+//	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
 	}
   /* USER CODE END EXTI1_IRQn 0 */
 
@@ -511,7 +530,7 @@ static float potentiometerValConv(float adcValue)
 		adcValue = 4000;
 	if(adcValue<300)
 		adcValue = 0;
-	float firingAngle = ((adcValue/3700)*100);
+	float firingAngle = ((adcValue/4000)*100);
 	return firingAngle;
 }
 
