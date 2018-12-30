@@ -73,9 +73,6 @@ int computeValueToPutIntoDmaBufferFromTicks(int *negativeHalf, int *positiveHalf
 	/*
 	 * Write into the DMA buffer
 	 */
-	if(index == DMA_BUFFER_MAX_SIZE)
-		index = 0;
-
 	if(state==TURN_OFF){
 		state=NORMAL_OPERATION;
 		*negativeHalf=-1;
@@ -97,6 +94,8 @@ int computeValueToPutIntoDmaBufferFromTicks(int *negativeHalf, int *positiveHalf
 		DMA_Buffer1[++index]= secPosPulse;
 		index++;
 		y+=1;
+		if(index == DMA_BUFFER_MAX_SIZE)
+			index = 0;
 	}
 	state=NORMAL_OPERATION;
 	return index;

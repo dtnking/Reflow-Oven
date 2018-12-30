@@ -622,8 +622,8 @@ Discarded input sections
  .debug_macro   0x00000000      0x84c Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
  .debug_macro   0x00000000       0x1f Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
  .debug_macro   0x00000000       0x83 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
- .debug_line    0x00000000      0xa97 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
- .debug_str     0x00000000    0x71815 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
+ .debug_line    0x00000000      0xaa3 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
+ .debug_str     0x00000000    0x71818 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
  .comment       0x00000000       0x80 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
  .debug_frame   0x00000000      0x178 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.o
  .ARM.attributes
@@ -2380,8 +2380,8 @@ Discarded input sections
                 0x00000000       0x18 Src/Api.o
  .debug_macro   0x00000000       0x1b Src/Api.o
  .debug_macro   0x00000000      0x8d4 Src/Api.o
- .debug_line    0x00000000       0x5d Src/Api.o
- .debug_str     0x00000000     0x25c6 Src/Api.o
+ .debug_line    0x00000000       0x60 Src/Api.o
+ .debug_str     0x00000000     0x25c9 Src/Api.o
  .comment       0x00000000       0x80 Src/Api.o
  .ARM.attributes
                 0x00000000       0x33 Src/Api.o
@@ -3637,18 +3637,19 @@ LOAD c:/ac6/systemworkbench/plugins/fr.ac6.mcu.externaltools.arm-none.win32_1.15
                 0x080026f2                computeFiringPercentageToTicks
  *fill*         0x0800271a        0x2 
  .text.computeValueToPutIntoDmaBufferFromTicks
-                0x0800271c       0xf4 Src/angleFiring.o
+                0x0800271c       0xf0 Src/angleFiring.o
                 0x0800271c                computeValueToPutIntoDmaBufferFromTicks
  .text.checkTransferCompletedFlag
-                0x08002810       0x10 Src/hardwareLogic.o
-                0x08002810                checkTransferCompletedFlag
+                0x0800280c       0x10 Src/hardwareLogic.o
+                0x0800280c                checkTransferCompletedFlag
  .text.disableDmaAndOcFiring
-                0x08002820       0x2c Src/hardwareLogic.o
-                0x08002820                disableDmaAndOcFiring
+                0x0800281c       0x2c Src/hardwareLogic.o
+                0x0800281c                disableDmaAndOcFiring
  .text.dmaConfiguration
-                0x0800284c       0x1c Src/main.o
+                0x08002848       0x1c Src/main.o
  .text.computeFiringPercentageFromRawAdc
-                0x08002868       0x38 Src/main.o
+                0x08002864       0x38 Src/main.o
+ *fill*         0x0800289c        0x4 
  .text.PIDcal   0x080028a0       0xb8 Src/main.o
  .text.MX_GPIO_Init
                 0x08002958       0xa4 Src/main.o
@@ -4088,7 +4089,7 @@ OUTPUT(PWM.elf elf32-littlearm)
  .debug_abbrev  0x00002768      0x226 Src/system_stm32f1xx.o
  .debug_abbrev  0x0000298e       0x12 startup/startup_stm32f103xb.o
 
-.debug_loc      0x00000000     0x6c5b
+.debug_loc      0x00000000     0x6c8b
  .debug_loc     0x00000000      0x108 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.o
  .debug_loc     0x00000108      0x952 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.o
  .debug_loc     0x00000a5a      0x5ad Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o
@@ -4098,11 +4099,11 @@ OUTPUT(PWM.elf elf32-littlearm)
  .debug_loc     0x00001f91      0x2dc Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o
  .debug_loc     0x0000226d     0x34d2 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o
  .debug_loc     0x0000573f      0xf2e Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o
- .debug_loc     0x0000666d      0x1f3 Src/angleFiring.o
- .debug_loc     0x00006860       0x59 Src/hardwareLogic.o
- .debug_loc     0x000068b9      0x1b2 Src/main.o
- .debug_loc     0x00006a6b      0x111 Src/stm32f1xx_hal_msp.o
- .debug_loc     0x00006b7c       0xdf Src/system_stm32f1xx.o
+ .debug_loc     0x0000666d      0x223 Src/angleFiring.o
+ .debug_loc     0x00006890       0x59 Src/hardwareLogic.o
+ .debug_loc     0x000068e9      0x1b2 Src/main.o
+ .debug_loc     0x00006a9b      0x111 Src/stm32f1xx_hal_msp.o
+ .debug_loc     0x00006bac       0xdf Src/system_stm32f1xx.o
 
 .debug_aranges  0x00000000      0xa70
  .debug_aranges
@@ -4237,54 +4238,54 @@ OUTPUT(PWM.elf elf32-littlearm)
  .debug_macro   0x00015c1a      0x2fa Src/stm32f1xx_it.o
  .debug_macro   0x00015f14      0x2f6 Src/system_stm32f1xx.o
 
-.debug_line     0x00000000     0x93f3
+.debug_line     0x00000000     0x9417
  .debug_line    0x00000000      0x8b3 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.o
- .debug_line    0x000008b3      0xc2f Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.o
- .debug_line    0x000014e2      0x8b2 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o
- .debug_line    0x00001d94      0x9dd Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.o
- .debug_line    0x00002771      0x8b4 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.o
- .debug_line    0x00003025      0x9c6 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.o
- .debug_line    0x000039eb      0x7c1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o
- .debug_line    0x000041ac     0x16bd Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o
- .debug_line    0x00005869      0xc80 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o
- .debug_line    0x000064e9      0x79c Src/angleFiring.o
- .debug_line    0x00006c85      0x71f Src/hardwareLogic.o
- .debug_line    0x000073a4      0x95f Src/main.o
- .debug_line    0x00007d03      0x7a1 Src/stm32f1xx_hal_msp.o
- .debug_line    0x000084a4      0x79b Src/stm32f1xx_it.o
- .debug_line    0x00008c3f      0x737 Src/system_stm32f1xx.o
- .debug_line    0x00009376       0x7d startup/startup_stm32f103xb.o
+ .debug_line    0x000008b3      0xc3b Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.o
+ .debug_line    0x000014ee      0x8b2 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o
+ .debug_line    0x00001da0      0x9dd Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.o
+ .debug_line    0x0000277d      0x8b4 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.o
+ .debug_line    0x00003031      0x9c6 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.o
+ .debug_line    0x000039f7      0x7c1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o
+ .debug_line    0x000041b8     0x16bd Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o
+ .debug_line    0x00005875      0xc80 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o
+ .debug_line    0x000064f5      0x7a8 Src/angleFiring.o
+ .debug_line    0x00006c9d      0x72b Src/hardwareLogic.o
+ .debug_line    0x000073c8      0x95f Src/main.o
+ .debug_line    0x00007d27      0x7a1 Src/stm32f1xx_hal_msp.o
+ .debug_line    0x000084c8      0x79b Src/stm32f1xx_it.o
+ .debug_line    0x00008c63      0x737 Src/system_stm32f1xx.o
+ .debug_line    0x0000939a       0x7d startup/startup_stm32f103xb.o
 
-.debug_str      0x00000000    0x74547
+.debug_str      0x00000000    0x74573
  .debug_str     0x00000000    0x7151e Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.o
                               0x718b6 (size before relaxing)
- .debug_str     0x0007151e      0x6bf Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.o
-                              0x7185d (size before relaxing)
- .debug_str     0x00071bdd      0x2e1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o
+ .debug_str     0x0007151e      0x6eb Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.o
+                              0x71860 (size before relaxing)
+ .debug_str     0x00071c09      0x2e1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.o
                               0x7180b (size before relaxing)
- .debug_str     0x00071ebe      0x1fb Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.o
+ .debug_str     0x00071eea      0x1fb Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.o
                               0x7154a (size before relaxing)
- .debug_str     0x000720b9      0x3ab Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.o
+ .debug_str     0x000720e5      0x3ab Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.o
                               0x71552 (size before relaxing)
- .debug_str     0x00072464      0x368 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.o
+ .debug_str     0x00072490      0x368 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.o
                               0x715a7 (size before relaxing)
- .debug_str     0x000727cc      0x110 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o
+ .debug_str     0x000727f8      0x110 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o
                               0x71333 (size before relaxing)
- .debug_str     0x000728dc      0xeff Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o
+ .debug_str     0x00072908      0xeff Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o
                               0x722a7 (size before relaxing)
- .debug_str     0x000737db      0x4f1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o
+ .debug_str     0x00073807      0x4f1 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o
                               0x71b49 (size before relaxing)
- .debug_str     0x00073ccc      0x31f Src/angleFiring.o
-                              0x717e8 (size before relaxing)
- .debug_str     0x00073feb       0x4d Src/hardwareLogic.o
-                              0x71526 (size before relaxing)
- .debug_str     0x00074038      0x3b0 Src/main.o
+ .debug_str     0x00073cf8      0x31f Src/angleFiring.o
+                              0x717eb (size before relaxing)
+ .debug_str     0x00074017       0x4d Src/hardwareLogic.o
+                              0x71529 (size before relaxing)
+ .debug_str     0x00074064      0x3b0 Src/main.o
                               0x72577 (size before relaxing)
- .debug_str     0x000743e8       0x25 Src/stm32f1xx_hal_msp.o
+ .debug_str     0x00074414       0x25 Src/stm32f1xx_hal_msp.o
                               0x71a89 (size before relaxing)
- .debug_str     0x0007440d       0xd1 Src/stm32f1xx_it.o
+ .debug_str     0x00074439       0xd1 Src/stm32f1xx_it.o
                               0x713dd (size before relaxing)
- .debug_str     0x000744de       0x69 Src/system_stm32f1xx.o
+ .debug_str     0x0007450a       0x69 Src/system_stm32f1xx.o
                               0x711fd (size before relaxing)
 
 .comment        0x00000000       0x7f
