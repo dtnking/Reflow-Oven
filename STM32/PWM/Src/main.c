@@ -40,11 +40,13 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 
+
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "stdlib.h"
 #include "angleFiring.h"
 #include "DbgMcu.h"
+#include "stm32f1xx_hal_dma.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -56,19 +58,20 @@ DMA_HandleTypeDef hdma_tim4_ch1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#define DESIRED_TEMP		200
+#define DESIRED_TEMP								200
 
-#define epsilon 	0.01
-#define dt 			0.02 //200mslooptime
-#define MAX 		3600
-#define MIN 		-3600
-#define Kp 			15
-#define Kd 			3
-#define Ki 			0
+#define epsilon 									0.01
+#define dt 											0.02 	//200ms loop time
+#define MAX 										3600
+#define MIN 										-3600
+#define Kp 											15
+#define Kd 											3
+#define Ki 											0
 
-#define TIM4_CCR1_ADDRS ((uint32_t)0x40000834)
-#define MAX_NUM_ELEMENT		127
+#define TIM4_CCR1_ADDRS 							((uint32_t)0x40000834)
+#define MAX_NUM_ELEMENT								127
 
+#define RESET_TIM4_CNT								(htim4.Instance->CNT = 0)
 
 volatile int doPulse=0;
 
@@ -90,21 +93,17 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-static void dmaSetAddressAndSize(void);
-//static void calculationForPulseWidth(float pulse,int *negativeHalf, int *positiveHalf);
-static float potentiometerValConv(float adcValue);
-static void XferHalfCpltCallback(DMA_HandleTypeDef *DmaHandle);
-static void XferCpltCallback(DMA_HandleTypeDef *DmaHandle);
-
-
-//static void replicateData(int *negativeHalf, int *positiveHalf);
+static void dmaConfiguration(void);
+static float computeFiringPercentageFromRawAdc(float adcValue);
 static float PIDcal(float setpoint,float actual_position);
 
+int getAdc();
 float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
-int conversionWithADC();
-float adcValue=0;
+
+
+int adcValue=0;
 int n=1000,x=1000;
-int nH=0,pH=0;
+volatile int nH=0,pH=0,index=0,Busy=0;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -122,6 +121,7 @@ int main(void)
   initialise_monitor_handles();
   haltTimerxWhenDebugging(DBG_TIM3_STOP);
   haltTimerxWhenDebugging(DBG_TIM4_STOP);
+  static int state=0;
 
   /* USER CODE END 1 */
 
@@ -149,17 +149,16 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 //  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
+  dmaConfiguration();
 
-
-  dmaSetAddressAndSize();
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  DMA_SetConfig(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,DMA_BUFFER_SIZE);
+
+//  HAL_TIM_Base_Start(&htim4);
+
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-  htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;
-  HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
-  HAL_TIM_Base_Start(&htim4);
 
 
   /* USER CODE END 2 */
@@ -169,9 +168,17 @@ int main(void)
   while (1)
   {
 
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+		adcValue = getAdc();
+		int percentage = computeFiringPercentageFromRawAdc(adcValue);
+		computeFiringPercentageToTicks(percentage,&nH,&pH,&Busy);
+		if(state==0){
+			HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+			state=1;
+		 }
   }
   /* USER CODE END 3 */
 
@@ -328,7 +335,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 1599;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 1000;
+  htim4.Init.Period = 500;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -364,7 +371,7 @@ static void MX_TIM4_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
-  sConfigOC.Pulse = 0;
+//  sConfigOC.Pulse = 50;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_OC_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -444,30 +451,20 @@ static void MX_GPIO_Init(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
-	static int state=0,bufferState=0;
+	static int state=1;
 
 	/*Configure GPIO pin Output Level */
 	if((EXTI->PR&0x02)==0x02){
 		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
 
-//		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,RESET);
-
 		doPulse=1;
-		adcValue = conversionWithADC();
-		int firingAngle=potentiometerValConv(adcValue);
-		convertFiringPercentageToTimes(firingAngle,&nH,&pH);
-		compensateFiringTimes(&nH,&pH);
-		if(bufferState==NON_BUFFERED){
-			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-			  getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-			  bufferState = BUFFERED;
+		computeValueToPutIntoDmaBufferFromTicks(&nH,&pH,Busy);
 
 
-		}
 #ifdef DEBUG_LOG
 		printf("\nraw ADC: %f",adcValue);
-		printf("\nfiring percentage: %i",firingAngle);
+		printf("\nfiring percentage: %i",percentage);
 		printf("\nt1: %i",nH);
 		printf("\nt2: %i",pH);
 
@@ -477,27 +474,30 @@ void EXTI1_IRQHandler(void)
 	 * 	So, CCR is hard-coded with a value to restart the DMA transfer when the power is on.
 	 *
 	 */
-		if(nH >= 100 + COMPENSATE_DELAY||pH >= 50 + COMPENSATE_DELAY)
-			state = 1;
-		if(state==1)
-		{
-			if(nH < 100 + COMPENSATE_DELAY||pH < 50 + COMPENSATE_DELAY)
-			{
-				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-				getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-//				HAL_DMA_Start_IT(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,8);
+		if(nH==-1||pH==-1){
+			disableDmaAndOcFiring();
+			state=1;
+		}
+		else{
+			if(state==1){
+				state=0;
+				HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
+				RESET_TIM4_CNT;
+				__HAL_DMA_ENABLE(&hdma_tim4_ch1);
+
+//				htim4.Instance->EGR |= 1<<1;		//set CC1F flag to request DMA.
+			}
+			else
 				HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
 
 
-				// htim4.Instance->CCR1 = nH;
-				state =0;
-			}
 		}
 
-//	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
-	}
-  /* USER CODE END EXTI1_IRQn 0 */
 
+
+
+  /* USER CODE END EXTI1_IRQn 0 */
+	}
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
 
@@ -505,7 +505,7 @@ void EXTI1_IRQHandler(void)
 }
 
 // Function for ADC
-int conversionWithADC()
+int getAdc()
 {
 	HAL_ADC_Start(&hadc1);
 
@@ -517,14 +517,15 @@ int conversionWithADC()
 	return HAL_ADC_GetValue(&hadc1);
 }
 
-static void dmaSetAddressAndSize(void)
+static void dmaConfiguration(void)
 {
-	hdma_tim4_ch1.XferCpltCallback = XferCpltCallback;
-	hdma_tim4_ch1.XferHalfCpltCallback = XferHalfCpltCallback;
-	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;
+
+	htim4.Instance->DIER |= TIM_DIER_CC1DE|TIM_DIER_TDE;  //Enable trigger DMA request and OC DMA request enable.
+	htim4.Instance->EGR |= TIM_EGR_CC1G|TIM_EGR_TG;		  //Compare 1 generation: Corresponding interrupt or DMA request is sent if enabled.
+
 }
 
-static float potentiometerValConv(float adcValue)
+static float computeFiringPercentageFromRawAdc(float adcValue)
 {
 	if(adcValue>4000)
 		adcValue = 4000;
@@ -648,22 +649,34 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
   return;
 }
 
-static void XferCpltCallback(DMA_HandleTypeDef *hdma)
+
+void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength)
 {
-	getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_HT);
+  /* Clear all flags */
+  hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
 
+  /* Configure DMA Channel data length */
+  hdma->Instance->CNDTR = DataLength;
+
+  /* Memory to Peripheral */
+  if((hdma->Init.Direction) == DMA_MEMORY_TO_PERIPH)
+  {
+    /* Configure DMA Channel destination address */
+    hdma->Instance->CPAR = DstAddress;
+
+    /* Configure DMA Channel source address */
+    hdma->Instance->CMAR = SrcAddress;
+  }
+  /* Peripheral to Memory */
+  else
+  {
+    /* Configure DMA Channel source address */
+    hdma->Instance->CPAR = SrcAddress;
+
+    /* Configure DMA Channel destination address */
+    hdma->Instance->CMAR = DstAddress;
+  }
 }
-
-static void XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
-{
-
-	getFiringTimesAndCopyIntoBuffer(&nH,&pH);
-	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
-}
-
-
-
 /* USER CODE END 4 */
 
 /**

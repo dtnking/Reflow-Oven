@@ -4,21 +4,27 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/Api.c \
 ../Src/angleFiring.c \
+../Src/hardwareLogic.c \
 ../Src/main.c \
 ../Src/stm32f1xx_hal_msp.c \
 ../Src/stm32f1xx_it.c \
 ../Src/system_stm32f1xx.c 
 
 OBJS += \
+./Src/Api.o \
 ./Src/angleFiring.o \
+./Src/hardwareLogic.o \
 ./Src/main.o \
 ./Src/stm32f1xx_hal_msp.o \
 ./Src/stm32f1xx_it.o \
 ./Src/system_stm32f1xx.o 
 
 C_DEPS += \
+./Src/Api.d \
 ./Src/angleFiring.d \
+./Src/hardwareLogic.d \
 ./Src/main.d \
 ./Src/stm32f1xx_hal_msp.d \
 ./Src/stm32f1xx_it.d \

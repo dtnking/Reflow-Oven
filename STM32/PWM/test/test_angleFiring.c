@@ -8,34 +8,34 @@ void tearDown(void){}
 /*
  *	Given a percentage, convert it to firing times(negativeHalf and positiveHalf).
  */
-void test_functionality_convertFiringPercentageToTimes(void)
+void test_functionality_computeFiringPercentageToTicks(void)
 {
 	int negativeHalf,positiveHalf;
-  convertFiringPercentageToTimes(1,&negativeHalf,&positiveHalf);
+	computeFiringPercentageToTicks(1,&negativeHalf,&positiveHalf);
  	TEST_ASSERT_EQUAL_INT(99,negativeHalf);
  	TEST_ASSERT_EQUAL_INT(49,positiveHalf);
-  convertFiringPercentageToTimes(2,&negativeHalf,&positiveHalf);
+ 	computeFiringPercentageToTicks(2,&negativeHalf,&positiveHalf);
  	TEST_ASSERT_EQUAL_INT(99,negativeHalf);
  	TEST_ASSERT_EQUAL_INT(49,positiveHalf);
-  convertFiringPercentageToTimes(3,&negativeHalf,&positiveHalf);
+ 	computeFiringPercentageToTicks(3,&negativeHalf,&positiveHalf);
  	TEST_ASSERT_EQUAL_INT(98,negativeHalf);
  	TEST_ASSERT_EQUAL_INT(48,positiveHalf);
-  convertFiringPercentageToTimes(4,&negativeHalf,&positiveHalf);
+ 	computeFiringPercentageToTicks(4,&negativeHalf,&positiveHalf);
  	TEST_ASSERT_EQUAL_INT(98,negativeHalf);
  	TEST_ASSERT_EQUAL_INT(48,positiveHalf);
-	convertFiringPercentageToTimes(5,&negativeHalf,&positiveHalf);
+ 	computeFiringPercentageToTicks(5,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(97,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(47,positiveHalf);
-	convertFiringPercentageToTimes(96,&negativeHalf,&positiveHalf);
+	computeFiringPercentageToTicks(96,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(52,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(2,positiveHalf);
-	convertFiringPercentageToTimes(97,&negativeHalf,&positiveHalf);
+	computeFiringPercentageToTicks(97,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(51,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(1,positiveHalf);
-	convertFiringPercentageToTimes(98,&negativeHalf,&positiveHalf);
+	computeFiringPercentageToTicks(98,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(51,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(1,positiveHalf);
-	convertFiringPercentageToTimes(99,&negativeHalf,&positiveHalf);
+	computeFiringPercentageToTicks(99,&negativeHalf,&positiveHalf);
 	TEST_ASSERT_EQUAL_INT(50,negativeHalf);
 	TEST_ASSERT_EQUAL_INT(50,negativeHalf);
 }
