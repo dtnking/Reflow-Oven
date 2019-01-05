@@ -599,6 +599,92 @@ HAL_StatusTypeDef HAL_DMA_PollForTransfer(DMA_HandleTypeDef *hdma, uint32_t Comp
 }
 
 /**
+  * @brief  Handles DMA interrupt request.
+  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
+  *               the configuration information for the specified DMA Channel.  
+  * @retval None
+  */
+void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
+{
+  uint32_t flag_it = hdma->DmaBaseAddress->ISR;
+  uint32_t source_it = hdma->Instance->CCR;
+  
+  /* Half Transfer Complete Interrupt management ******************************/
+  if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
+  {
+    /* Disable the half transfer interrupt if the DMA mode is not CIRCULAR */
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    {
+      /* Disable the half transfer interrupt */
+      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
+    }
+    /* Clear the half transfer complete flag */
+    __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
+
+    /* DMA peripheral state is not updated in Half Transfer */
+    /* but in Transfer Complete case */
+
+    if(hdma->XferHalfCpltCallback != NULL)
+    {
+      /* Half transfer callback */
+      hdma->XferHalfCpltCallback(hdma);
+    }
+  }
+
+  /* Transfer Complete Interrupt management ***********************************/
+  else if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
+  {
+    if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
+    {
+      /* Disable the transfer complete and error interrupt */
+      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_TE | DMA_IT_TC);  
+
+      /* Change the DMA state */
+      hdma->State = HAL_DMA_STATE_READY;
+    }
+    /* Clear the transfer complete flag */
+      __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));
+
+    /* Process Unlocked */
+    __HAL_UNLOCK(hdma);
+
+    if(hdma->XferCpltCallback != NULL)
+    {
+      /* Transfer complete callback */
+      hdma->XferCpltCallback(hdma);
+    }
+  }
+
+  /* Transfer Error Interrupt management **************************************/
+  else if (( RESET != (flag_it & (DMA_FLAG_TE1 << hdma->ChannelIndex))) && (RESET != (source_it & DMA_IT_TE)))
+  {
+    /* When a DMA transfer error occurs */
+    /* A hardware clear of its EN bits is performed */
+    /* Disable ALL DMA IT */
+    __HAL_DMA_DISABLE_IT(hdma, (DMA_IT_TC | DMA_IT_HT | DMA_IT_TE));
+
+    /* Clear all flags */
+    hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
+
+    /* Update error code */
+    hdma->ErrorCode = HAL_DMA_ERROR_TE;
+
+    /* Change the DMA state */
+    hdma->State = HAL_DMA_STATE_READY;
+
+    /* Process Unlocked */
+    __HAL_UNLOCK(hdma);
+
+    if (hdma->XferErrorCallback != NULL)
+    {
+      /* Transfer error callback */
+      hdma->XferErrorCallback(hdma);
+    }
+  }
+  return;
+}
+
+/**
   * @brief Register callbacks
   * @param hdma: pointer to a DMA_HandleTypeDef structure that contains
   *              the configuration information for the specified DMA Channel.

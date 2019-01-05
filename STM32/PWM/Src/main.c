@@ -1,4 +1,3 @@
-
 /**
   ******************************************************************************
   * @file           : main.c
@@ -39,14 +38,18 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_hal.h"
-
+#include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "stdlib.h"
 #include "angleFiring.h"
 #include "DbgMcu.h"
+#include "usbd_cdc_if.h"
+#include "usbd_def.h"
+#include "hardwareLogic.h"
 #include "stm32f1xx_hal_dma.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -85,7 +88,7 @@ static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
-extern void initialise_monitor_handles(void);
+//extern void initialise_monitor_handles(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
@@ -96,14 +99,17 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 static void dmaConfiguration(void);
 static float computeFiringPercentageFromRawAdc(float adcValue);
 static float PIDcal(float setpoint,float actual_position);
+static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+
 
 int getAdc();
 float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
 
 
 int adcValue=0;
+int percentageVal=0;
 int n=1000,x=1000;
-volatile int nH=0,pH=0,index=0,Busy=0;
+volatile int nH=0,pH=0,Busy=0;
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -116,11 +122,11 @@ volatile int nH=0,pH=0,index=0,Busy=0;
   * @retval None
   */
 int main(void)
-{
+ {
   /* USER CODE BEGIN 1 */
-  initialise_monitor_handles();
-  haltTimerxWhenDebugging(DBG_TIM3_STOP);
-  haltTimerxWhenDebugging(DBG_TIM4_STOP);
+//  initialise_monitor_handles();
+//  haltTimerxWhenDebugging(DBG_TIM3_STOP);
+//  haltTimerxWhenDebugging(DBG_TIM4_STOP);
   static int state=0;
 
   /* USER CODE END 1 */
@@ -148,6 +154,7 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+  MX_USB_DEVICE_Init();
 //  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
   dmaConfiguration();
 
@@ -172,9 +179,13 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-		adcValue = getAdc();
-		int percentage = computeFiringPercentageFromRawAdc(adcValue);
-		computeFiringPercentageToTicks(percentage,&nH,&pH,&Busy);
+//		adcValue = getAdc();
+//		int percentage = computeFiringPercentageFromRawAdc(adcValue);
+//		computeFiringPercentageToTicks(percentage,&nH,&pH,&Busy);
+
+	  	percentageVal = (int)interpretor(&UserRxBufferFS);
+	  	computeFiringPercentageToTicks(percentageVal,&nH,&pH,&Busy);
+
 		if(state==0){
 			HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 			state=1;
@@ -195,51 +206,53 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
-    /**Initializes the CPU, AHB and APB busses clocks
+    /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Initializes the CPU, AHB and APB busses clocks
+    /**Initializes the CPU, AHB and APB busses clocks 
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV16;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV8;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the Systick interrupt time
+    /**Configure the Systick interrupt time 
     */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-    /**Configure the Systick
+    /**Configure the Systick 
     */
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
+
 
 /* ADC1 init function */
 static void MX_ADC1_Init(void)
@@ -333,7 +346,7 @@ static void MX_TIM4_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 1599;
+  htim4.Init.Prescaler = 9599;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 500;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -409,6 +422,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -461,7 +475,6 @@ void EXTI1_IRQHandler(void)
 		doPulse=1;
 		computeValueToPutIntoDmaBufferFromTicks(&nH,&pH,Busy);
 
-
 #ifdef DEBUG_LOG
 		printf("\nraw ADC: %f",adcValue);
 		printf("\nfiring percentage: %i",percentage);
@@ -489,13 +502,7 @@ void EXTI1_IRQHandler(void)
 			}
 			else
 				HAL_TIM_OC_Start(&htim4, TIM_CHANNEL_1);
-
-
 		}
-
-
-
-
   /* USER CODE END EXTI1_IRQn 0 */
 	}
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
@@ -568,89 +575,7 @@ static float PIDcal(float setpoint,float actual_position)
 
 }
 
-void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
-{
-  uint32_t flag_it = hdma->DmaBaseAddress->ISR;
-  uint32_t source_it = hdma->Instance->CCR;
-
-  /* Half Transfer Complete Interrupt management ******************************/
-  if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
-  {
-
-
-    /* Disable the half transfer interrupt if the DMA mode is not CIRCULAR */
-    if((hdma->Instance->CCR & DMA_CCR_CIRC) != 0U)
-    {
-      /* Disable the half transfer interrupt */
-      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
-    }
-    /* Clear the half transfer complete flag */
-    __HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma));
-
-    /* DMA peripheral state is not updated in Half Transfer */
-    /* but in Transfer Complete case */
-
-    if(hdma->XferHalfCpltCallback != NULL)
-    {
-      /* Half transfer callback */
-      hdma->XferHalfCpltCallback(hdma);
-    }
-  }
-
-  /* Transfer Complete Interrupt management ***********************************/
-  else if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
-  {
-    if((hdma->Instance->CCR & DMA_CCR_CIRC) != 0U)
-    {
-      /* Disable the transfer complete and error interrupt */
-      __HAL_DMA_DISABLE_IT(hdma, DMA_IT_TE | DMA_IT_TC);
-
-      /* Change the DMA state */
-      hdma->State = HAL_DMA_STATE_READY;
-    }
-    /* Clear the transfer complete flag */
-
-    /* Process Unlocked */
-    __HAL_UNLOCK(hdma);
-
-    if(hdma->XferCpltCallback != NULL)
-    {
-      /* Transfer complete callback */
-      hdma->XferCpltCallback(hdma);
-    }
-  }
-
-  /* Transfer Error Interrupt management **************************************/
-  else if (( RESET != (flag_it & (DMA_FLAG_TE1 << hdma->ChannelIndex))) && (RESET != (source_it & DMA_IT_TE)))
-  {
-    /* When a DMA transfer error occurs */
-    /* A hardware clear of its EN bits is performed */
-    /* Disable ALL DMA IT */
-    __HAL_DMA_DISABLE_IT(hdma, (DMA_IT_TC | DMA_IT_HT | DMA_IT_TE));
-
-    /* Clear all flags */
-    hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
-
-    /* Update error code */
-    hdma->ErrorCode = HAL_DMA_ERROR_TE;
-
-    /* Change the DMA state */
-    hdma->State = HAL_DMA_STATE_READY;
-
-    /* Process Unlocked */
-    __HAL_UNLOCK(hdma);
-
-    if (hdma->XferErrorCallback != NULL)
-    {
-      /* Transfer error callback */
-      hdma->XferErrorCallback(hdma);
-    }
-  }
-  return;
-}
-
-
-void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength)
+static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength)
 {
   /* Clear all flags */
   hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
