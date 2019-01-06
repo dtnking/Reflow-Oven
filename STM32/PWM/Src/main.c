@@ -54,7 +54,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-
+SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 DMA_HandleTypeDef hdma_tim4_ch1;
@@ -85,6 +85,7 @@ volatile int doPulse=0;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
+static void MX_SPI2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
@@ -92,19 +93,17 @@ static void MX_ADC1_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
-
-
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void dmaConfiguration(void);
 static float computeFiringPercentageFromRawAdc(float adcValue);
 static float PIDcal(float setpoint,float actual_position);
 static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
-
+int readData(uint8_t *tempBuff);
 
 int getAdc();
 float (*patternCallBack)(float setPoint,float actual_position)= &PIDcal;
-
+uint8_t tempBuff[1]={0};
 
 int adcValue=0;
 int percentageVal=0;
@@ -149,22 +148,21 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_SPI2_Init();
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_NVIC_EnableIRQ(SPI2_IRQn);
   MX_USB_DEVICE_Init();
 //  float pulse = (*patternCallBack)(DESIRED_TEMP,200);
   dmaConfiguration();
-
-  HAL_TIM_Base_Start(&htim3);
-  HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET);
   DMA_SetConfig(&hdma_tim4_ch1,(uint32_t)DMA_Buffer1,(uint32_t)TIM4_CCR1_ADDRS,DMA_BUFFER_SIZE);
 
-//  HAL_TIM_Base_Start(&htim4);
-
+  HAL_NVIC_EnableIRQ(TIM3_IRQn);
+  HAL_TIM_Base_Start_IT(&htim3);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 
@@ -185,7 +183,7 @@ int main(void)
 
 	  	percentageVal = (int)interpretor(&UserRxBufferFS);
 	  	computeFiringPercentageToTicks(percentageVal,&nH,&pH,&Busy);
-
+	  	char a[]= "hello";
 		if(state==0){
 			HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 			state=1;
@@ -295,9 +293,9 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 1599;
+  htim3.Init.Prescaler = 65534;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 100;
+  htim3.Init.Period = 2000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -319,20 +317,10 @@ static void MX_TIM3_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+   {
+     _Error_Handler(__FILE__, __LINE__);
+   }
 
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 50;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -459,6 +447,28 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void MX_SPI2_Init(void)
+{
+
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES_RXONLY;
+  hspi2.Init.DataSize = SPI_DATASIZE_16BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
 /**
 * @brief This function handles EXTI line1 interrupt.
 */
@@ -510,6 +520,61 @@ void EXTI1_IRQHandler(void)
 
   /* USER CODE END EXTI1_IRQn 1 */
 }
+
+/**
+* @brief This function handles TIM3 global interrupt.
+*/
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+	htim3.Instance->SR &= 0;
+	readData(tempBuff);
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+
+int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
+{
+	/* USER CODE BEGIN 6 */
+	int i=0,y=0;
+
+	while(Buf[i]!=0){
+		USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[i]);
+		USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+		i++;
+	}
+	return (USBD_OK);
+	  /* USER CODE END 6 */
+	}
+
+
+int readData(uint8_t *tempBuff){
+	uint8_t data[2]={0};
+	static int i = 0;
+	uint16_t value;
+	HAL_StatusTypeDef state;
+//	while((hspi2.Instance->SR & 1) == 0);
+
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,RESET);
+	state = HAL_SPI_Receive(&hspi2,data,1,1000);
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,SET);
+	if(data[0]&4){
+		return 0;
+	}
+	asm volatile("dmb":::"memory");
+	value = (data[1]<<8 | data[0]);
+	asm volatile("dmb":::"memory");
+	value = ((0x0fff & (value>>3))/4);
+	asm volatile("dmb":::"memory");
+	tempBuff[0]=value;
+  	CDC_Transmit_FS(tempBuff,1);
+
+}
+
 
 // Function for ADC
 int getAdc()

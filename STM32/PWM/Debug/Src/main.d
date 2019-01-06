@@ -23,6 +23,7 @@ Src/main.o: ../Src/main.c \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
+ D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
  D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h \
@@ -89,6 +90,8 @@ D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx
 D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h:
 
 D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h:
+
+D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h:
 
 D:/Project/test/Reflow-Oven/STM32/PWM/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 

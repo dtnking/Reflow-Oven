@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * Copyright (c) 2019 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -120,6 +120,7 @@
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
+uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
@@ -286,20 +287,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
-{
-  /* USER CODE BEGIN 6 */
-	int i=0,y=0;
 
-	while(Buf[i]!=0)
-	{
-	 USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[i]);
-	 USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-	 i++;
-	}
-  return (USBD_OK);
-  /* USER CODE END 6 */
-}
 
 uint8_t interpretor(uint8_t *buf){
 	static int cmdIndex = 0;
@@ -310,6 +298,7 @@ uint8_t interpretor(uint8_t *buf){
 	}
 	return buf[cmdIndex];
 }
+
 /**
   * @brief  CDC_Transmit_FS
   *         Data to send over USB IN endpoint are sent over CDC interface
@@ -321,7 +310,7 @@ uint8_t interpretor(uint8_t *buf){
   * @param  Len: Number of data to be sent (in bytes)
   * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
   */
-uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
+uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
